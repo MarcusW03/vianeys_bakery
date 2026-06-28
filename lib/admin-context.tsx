@@ -2,8 +2,9 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { signOut } from 'next-auth/react';
-import type { SiteConfig, SiteTheme, SectionStyle } from '@/lib/config/types';
+import type { SiteConfig, SiteTheme, SectionStyle, SectionInstance } from '@/lib/config/types';
 import { removeImageUrlFromConfig } from '@/lib/config/utils';
+import { SECTION_REGISTRY } from '@/lib/sections/registry';
 
 interface AdminContextValue {
   isAdmin: boolean;
@@ -26,6 +27,9 @@ interface AdminContextValue {
   updateSectionStyle: (instanceId: string, patch: Partial<SectionStyle>) => void;
   toggleSectionVisibility: (instanceId: string) => void;
   reorderSections: (newIdOrder: string[]) => void;
+  addSection: (type: string) => void;
+  duplicateSection: (instanceId: string) => void;
+  removeSection: (instanceId: string) => void;
   removeImageUrl: (url: string) => void;
   saveChanges: () => Promise<{ ok: boolean; error?: string }>;
   discardChanges: () => void;
@@ -142,6 +146,44 @@ export function AdminProvider({
     });
   }, []);
 
+  const addSection = useCallback((type: string) => {
+    setWorkingConfig((prev) => {
+      if (!prev) return prev;
+      const def = SECTION_REGISTRY[type];
+      if (!def) return prev;
+      const newInstance: SectionInstance = {
+        id: `${type}-${Date.now()}`,
+        type,
+        content: structuredClone(def.defaultContent),
+        style: structuredClone(def.defaultStyle),
+      };
+      return { ...prev, sections: [...prev.sections, newInstance] };
+    });
+  }, []);
+
+  const duplicateSection = useCallback((instanceId: string) => {
+    setWorkingConfig((prev) => {
+      if (!prev) return prev;
+      const index = prev.sections.findIndex((s) => s.id === instanceId);
+      if (index === -1) return prev;
+      const source = prev.sections[index];
+      const clone: SectionInstance = {
+        ...structuredClone(source),
+        id: `${source.type}-${Date.now()}`,
+      };
+      const sections = [...prev.sections];
+      sections.splice(index + 1, 0, clone);
+      return { ...prev, sections };
+    });
+  }, []);
+
+  const removeSection = useCallback((instanceId: string) => {
+    setWorkingConfig((prev) => {
+      if (!prev) return prev;
+      return { ...prev, sections: prev.sections.filter((s) => s.id !== instanceId) };
+    });
+  }, []);
+
   const saveChanges = useCallback(async (): Promise<{ ok: boolean; error?: string }> => {
     if (!workingConfig) return { ok: false, error: 'No changes to save' };
     setIsSaving(true);
@@ -193,6 +235,9 @@ export function AdminProvider({
         removeImageUrl,
         reorderSections,
         toggleSectionVisibility,
+        addSection,
+        duplicateSection,
+        removeSection,
         saveChanges,
         discardChanges,
       }}

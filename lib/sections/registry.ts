@@ -30,6 +30,12 @@ export interface SectionDefinition<TContent = unknown> {
   defaultContent: TContent;
   defaultStyle: SectionStyle;
   Renderer: ComponentType<SectionRendererProps<TContent>>;
+  /** Whether a customer-facing nav (Sidebar) should ever link to this section.
+   * Default true — Hero opts out since it's the page's own top banner. */
+  showInNav?: boolean;
+  /** Whether an instance with this content would render nothing on the
+   * customer-facing page (e.g. no images yet) — used to dim/skip it in nav. */
+  isEmpty?: (content: TContent) => boolean;
 }
 
 // The single place section types are declared — the renderer, defaults,
@@ -47,6 +53,7 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition<any>> = {
     } satisfies HeroContent,
     defaultStyle: { background: 'color3', heading: '#ffffff', text: '#1c1c1c' },
     Renderer: HeroSection,
+    showInNav: false,
   },
   featured: {
     type: 'featured',
@@ -57,6 +64,7 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition<any>> = {
     } satisfies FeaturedContent,
     defaultStyle: { background: 'color2', heading: 'color3', text: 'color3' },
     Renderer: FeaturedGallery,
+    isEmpty: (content: FeaturedContent) => content.imageUrls.filter(Boolean).length === 0,
   },
   gallery: {
     type: 'gallery',
@@ -72,6 +80,7 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition<any>> = {
     } satisfies GalleryContent,
     defaultStyle: { background: '#f7f7f7', heading: 'color3', text: 'color3' },
     Renderer: GallerySection,
+    isEmpty: (content: GalleryContent) => content.categories.length === 0,
   },
   pricing: {
     type: 'pricing',
@@ -176,3 +185,22 @@ export const DEFAULT_SECTION_ORDER = [
   'about',
   'contact',
 ];
+
+/** Human-readable label for one instance — prefers the instance's own
+ * `content.sectionTitle` where one exists, otherwise falls back to the
+ * registry's type label, disambiguated with "(n)" once a type has more
+ * than one instance (e.g. a second Gallery section). */
+export function getInstanceLabel(
+  instance: SectionInstance,
+  allSections: SectionInstance[],
+): string {
+  const def = SECTION_REGISTRY[instance.type];
+  const label = def?.label ?? instance.type;
+  const sectionTitle = (instance.content as { sectionTitle?: unknown })?.sectionTitle;
+  if (typeof sectionTitle === 'string' && sectionTitle) return sectionTitle;
+
+  const siblings = allSections.filter((s) => s.type === instance.type);
+  if (siblings.length <= 1) return label;
+  const index = siblings.findIndex((s) => s.id === instance.id) + 1;
+  return `${label} (${index})`;
+}

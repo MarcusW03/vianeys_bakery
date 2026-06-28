@@ -23,13 +23,15 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
+import ViewQuiltIcon from '@mui/icons-material/ViewQuilt';
 import SaveIcon from '@mui/icons-material/Save';
 import UndoIcon from '@mui/icons-material/Undo';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { useAdmin } from '@/lib/admin-context';
 import type { SiteConfig } from '@/lib/config/types';
-import { SECTION_REGISTRY } from '@/lib/sections/registry';
+import { SECTION_REGISTRY, getInstanceLabel } from '@/lib/sections/registry';
 import ImagePicker from './ImagePicker';
+import ManageSectionsDialog from './ManageSectionsDialog';
 
 
 interface SidebarProps {
@@ -99,6 +101,7 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
   } = useAdmin();
 
   const [imageLibraryOpen, setImageLibraryOpen] = useState(false);
+  const [manageSectionsOpen, setManageSectionsOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -112,25 +115,21 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
   const theme = displayConfig.theme;
 
   // A section is "effectively empty" for a customer when its own component
-  // would render null — mirrors FeaturedGallery's/GallerySection's self-hide
-  // checks so the nav link doesn't point at nothing.
-  const isEffectivelyEmpty = (instance: SiteConfig['sections'][number]): boolean => {
-    if (instance.type === 'featured') {
-      return (instance.content as { imageUrls: string[] }).imageUrls.filter(Boolean).length === 0;
-    }
-    if (instance.type === 'gallery') {
-      return (instance.content as { categories: unknown[] }).categories.length === 0;
-    }
-    return false;
-  };
+  // would render null — asks the registry's declared isEmpty() rather than
+  // special-casing type names here.
+  const isEffectivelyEmpty = (instance: SiteConfig['sections'][number]): boolean =>
+    SECTION_REGISTRY[instance.type]?.isEmpty?.(instance.content) ?? false;
 
-  // Hero is the page's own top banner — redundant as a nav link for customers.
-  // Admins still see it (and hidden/empty sections, dimmed) in edit mode so
-  // they can reorder/hide/fill them like any other section.
+  // Some section types (Hero) opt out of nav entirely — redundant as a link
+  // for customers since it's the page's own top banner. Admins still see
+  // every instance (incl. hidden/empty, dimmed) in edit mode so they can
+  // reorder/hide/fill them like any other section.
   const navSections =
     isAdmin && editMode
       ? sections
-      : sections.filter((s) => s.type !== 'hero' && !s.hidden && !isEffectivelyEmpty(s));
+      : sections.filter(
+          (s) => SECTION_REGISTRY[s.type]?.showInNav !== false && !s.hidden && !isEffectivelyEmpty(s),
+        );
 
   const handleSave = async () => {
     const result = await saveChanges();
@@ -294,9 +293,7 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
         <ul className="flex flex-col gap-0.5">
           {navSections.map((instance) => {
             const isHidden = !!instance.hidden;
-            const def = SECTION_REGISTRY[instance.type];
-            const label = def?.label ?? instance.type;
-            const title = (instance.content as { sectionTitle?: string })?.sectionTitle ?? label;
+            const title = getInstanceLabel(instance, sections);
             const isDragging = draggedSection === instance.id;
             const isOver = dragOverSection === instance.id;
 
@@ -414,6 +411,16 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
             flexShrink: 0,
           }}
         >
+          {editMode && (
+            <button
+              onClick={() => setManageSectionsOpen(true)}
+              className="sidebar-item-hover w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150"
+              style={{ color: 'var(--theme-accent)' }}
+            >
+              <ViewQuiltIcon sx={{ fontSize: 16, opacity: 0.6 }} />
+              Manage Sections
+            </button>
+          )}
           <button
             onClick={() => setImageLibraryOpen(true)}
             className="sidebar-item-hover w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150"
@@ -440,6 +447,15 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
           onClose={() => setImageLibraryOpen(false)}
           onSelect={() => setImageLibraryOpen(false)}
           mode="manage"
+        />
+      )}
+
+      {/* ── Manage Sections (add / duplicate / remove / reorder) ── */}
+      {isAdmin && editMode && (
+        <ManageSectionsDialog
+          open={manageSectionsOpen}
+          onClose={() => setManageSectionsOpen(false)}
+          sections={sections}
         />
       )}
 
