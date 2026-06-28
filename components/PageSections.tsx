@@ -38,7 +38,15 @@ export default function PageSections({ initialConfig, adminName }: PageSectionsP
       secondaryColor: theme.secondaryColor ?? '#f5e6d3',
       accentColor: theme.accentColor ?? '#3a2a1a',
     });
-  }, [config.theme]);
+    // Same idea for the sidebar width: only override the default fluid
+    // clamp() when the admin has set one, and remove the override (falling
+    // back to the CSS default) if they discard back to unset.
+    if (config.sidebarWidthPx) {
+      root.style.setProperty('--sidebar-width', `${config.sidebarWidthPx}px`);
+    } else {
+      root.style.removeProperty('--sidebar-width');
+    }
+  }, [config.theme, config.sidebarWidthPx]);
 
   return (
     // Flex row: sidebar + main content side by side on desktop.

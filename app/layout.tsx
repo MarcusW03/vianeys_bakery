@@ -50,6 +50,11 @@ export default async function RootLayout({
         ['--theme-primary' as string]: theme.primaryColor,
         ['--theme-secondary' as string]: theme.secondaryColor,
         ['--theme-accent' as string]: theme.accentColor,
+        // Only override the default fluid clamp() when the admin has
+        // explicitly resized the sidebar (see Sidebar.tsx's resize handle).
+        ...(config.sidebarWidthPx
+          ? { ['--sidebar-width' as string]: `${config.sidebarWidthPx}px` }
+          : {}),
       }}
     >
       <body className="min-h-full flex flex-col">

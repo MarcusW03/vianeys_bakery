@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import List from '@mui/material/List';
@@ -248,8 +248,40 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
 }
 
 // ─── Main Sidebar export ───────────────────────────────────────────────────────
+// Resize bounds for the desktop sidebar's drag handle — wide enough to be
+// usable, narrow enough not to crowd out the page content.
+const MIN_SIDEBAR_WIDTH = 180;
+const MAX_SIDEBAR_WIDTH = 360;
+
 export default function Sidebar({ config, adminName }: SidebarProps) {
+  const { isAdmin, editMode, updateSidebarWidth } = useAdmin();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const paperContentRef = useRef<HTMLDivElement>(null);
+
+  // ── Resize (desktop only, edit mode only) ──────────────────────────────────
+  // Live-updates the CSS var directly during drag (like ColorSwatchInput's
+  // live preview) instead of through React state on every mousemove tick —
+  // commits to config only once, on release, so Save/Discard behave exactly
+  // like every other edit.
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = paperContentRef.current?.getBoundingClientRect().width ?? 220;
+
+    const clamp = (w: number) => Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, w));
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const newWidth = clamp(startWidth + (moveEvent.clientX - startX));
+      document.documentElement.style.setProperty('--sidebar-width', `${newWidth}px`);
+    };
+    const onMouseUp = (upEvent: MouseEvent) => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      updateSidebarWidth(Math.round(clamp(startWidth + (upEvent.clientX - startX))));
+    };
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
 
   // Width comes from the --sidebar-width CSS var (set once in globals.css as a
   // clamp(), not pinned here in JS) so it scales fluidly with the viewport
@@ -365,6 +397,13 @@ export default function Sidebar({ config, adminName }: SidebarProps) {
       <Drawer
         variant="permanent"
         anchor="left"
+        slotProps={{
+          paper: {
+            // Same dashed treatment sections get in edit mode, so the
+            // sidebar visibly reads as "selectable/resizable" too.
+            className: editMode && isAdmin ? 'edit-mode-section-outline' : undefined,
+          },
+        }}
         sx={{
           display: { xs: 'none', md: 'block' },
           // Reserve sidebar width *plus* the floating gutter so `<main>`
@@ -377,8 +416,22 @@ export default function Sidebar({ config, adminName }: SidebarProps) {
           ...drawerSx,
         }}
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full relative" ref={paperContentRef}>
           <NavContent config={config} adminName={adminName} />
+          {editMode && isAdmin && (
+            <div
+              onMouseDown={handleResizeStart}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize sidebar"
+              className="absolute top-0 right-0 h-full"
+              style={{
+                width: 6,
+                cursor: 'col-resize',
+                background: 'color-mix(in srgb, var(--theme-primary) 25%, transparent)',
+              }}
+            />
+          )}
         </div>
       </Drawer>
     </>

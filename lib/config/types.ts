@@ -109,6 +109,10 @@ export interface SectionInstance<TContent = unknown> {
 export interface SiteConfig {
   siteName: string;
   theme: SiteTheme;
+  /** Admin-resized Sidebar width in px, set by dragging its edit-mode resize
+   * handle. Unset keeps the default fluid clamp() — once set, it's a fixed
+   * value the admin explicitly chose, not expected to stay responsive. */
+  sidebarWidthPx?: number;
   sections: SectionInstance[];
   lastUpdated: string;
 }

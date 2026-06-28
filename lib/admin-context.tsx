@@ -23,6 +23,7 @@ interface AdminContextValue {
   exitEditMode: () => void;
   updateSiteName: (name: string) => void;
   updateTheme: (patch: Partial<SiteTheme>) => void;
+  updateSidebarWidth: (px: number) => void;
   updateSectionContent: (instanceId: string, patch: Record<string, unknown>) => void;
   updateSectionStyle: (instanceId: string, patch: Partial<SectionStyle>) => void;
   toggleSectionVisibility: (instanceId: string) => void;
@@ -89,6 +90,10 @@ export function AdminProvider({
     setWorkingConfig((prev) =>
       prev ? { ...prev, theme: { ...prev.theme, ...patch } } : prev,
     );
+  }, []);
+
+  const updateSidebarWidth = useCallback((px: number) => {
+    setWorkingConfig((prev) => (prev ? { ...prev, sidebarWidthPx: px } : prev));
   }, []);
 
   const updateSectionContent = useCallback(
@@ -230,6 +235,7 @@ export function AdminProvider({
         exitEditMode,
         updateSiteName,
         updateTheme,
+        updateSidebarWidth,
         updateSectionContent,
         updateSectionStyle,
         removeImageUrl,
