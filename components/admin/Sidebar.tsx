@@ -536,8 +536,12 @@ export default function Sidebar({ config, adminName }: SidebarProps) {
       <IconButton
         onClick={() => setMobileOpen(true)}
         aria-label="Open navigation"
-        className="md:hidden"
         sx={{
+          // Use sx's breakpoint object, not a Tailwind `md:hidden` className —
+          // MUI's emotion-injected styles can land later in the stylesheet
+          // than Tailwind's, so a plain utility class isn't guaranteed to
+          // win the specificity tie and the button stayed visible on desktop.
+          display: { xs: 'flex', md: 'none' },
           position: 'fixed',
           top: 16,
           left: 16,

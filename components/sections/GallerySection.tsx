@@ -53,6 +53,9 @@ export default function GallerySection({
   const addCategory = () => {
     const newCat: GalleryCategory = { id: `cat-${Date.now()}`, name: 'New Category', images: [] };
     onContentChange({ categories: [...categories, newCat] });
+    // Land the admin directly on the new category instead of leaving them on
+    // whichever tab was active — that's also where the name becomes editable.
+    setActiveTab(newCat.id);
   };
 
   const removeCategory = (id: string) => {
@@ -96,11 +99,20 @@ export default function GallerySection({
     setLightboxOpen(false);
   }, [activeTab]);
 
+  // Clamp defensively at render time rather than relying solely on the
+  // effect below — discarding edits (or a category disappearing any other
+  // way) changes `categories` synchronously, but effects run a tick later,
+  // so passing the raw (possibly now-stale) `activeTab` straight to <Tabs>
+  // briefly hands it a value none of its children have, which MUI flags as
+  // an invalid-prop console error for that one frame.
+  const safeActiveTab =
+    activeTab === 'all' || categories.some((c) => c.id === activeTab) ? activeTab : 'all';
+
   const allImages = categories.flatMap((c) => c.images.filter((img) => img.url));
   const activeCategory =
-    activeTab === 'all' ? null : categories.find((c) => c.id === activeTab);
+    safeActiveTab === 'all' ? null : categories.find((c) => c.id === safeActiveTab);
   const currentImages =
-    activeTab === 'all'
+    safeActiveTab === 'all'
       ? allImages
       : (activeCategory?.images.filter((img) => img.url) ?? []);
   const slides = currentImages.map((img) => ({ src: img.url, alt: img.alt }));
@@ -144,7 +156,7 @@ export default function GallerySection({
 
   // Images shown in the scroll grid (edit mode shows including empties)
   const gridImages =
-    editMode && activeTab !== 'all'
+    editMode && safeActiveTab !== 'all'
       ? (activeCategory?.images ?? [])
       : currentImages;
 
@@ -178,7 +190,7 @@ export default function GallerySection({
           }}
         >
           <Tabs
-            value={activeTab}
+            value={safeActiveTab}
             onChange={(_, v: string) => setActiveTab(v)}
             textColor="primary"
             indicatorColor="primary"
@@ -196,13 +208,13 @@ export default function GallerySection({
               <Button size="small" variant="outlined" onClick={addCategory}>
                 + Category
               </Button>
-              {activeTab !== 'all' && (
+              {safeActiveTab !== 'all' && (
                 <Button
                   size="small"
                   variant="outlined"
                   color="error"
                   onClick={() => {
-                    const cat = categories.find((c) => c.id === activeTab);
+                    const cat = categories.find((c) => c.id === safeActiveTab);
                     if (cat) handleDeleteCategory(cat);
                   }}
                 >
@@ -212,6 +224,23 @@ export default function GallerySection({
             </Box>
           )}
         </Box>
+
+        {/* Category name — editable separately from the Tab itself, since a
+            Tab's own label isn't a safe place to host a click-to-edit field
+            without it fighting the Tab's own click-to-select behavior. */}
+        {editMode && activeCategory && (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 3 }}>
+            <Typography variant="caption" color="text.secondary">
+              Category name:
+            </Typography>
+            <span style={{ fontWeight: 600, color: headingColor }}>
+              <EditableText
+                value={activeCategory.name}
+                onChange={(val) => updateCategory(activeCategory.id, { name: val })}
+              />
+            </span>
+          </Box>
+        )}
 
         {/* ── Image grid ── */}
         {/*
@@ -230,7 +259,7 @@ export default function GallerySection({
                 className="relative rounded-[var(--radius-md)] overflow-hidden group flex-shrink-0"
                 style={{ width: CELL, height: CELL }}
               >
-                {activeTab !== 'all' ? (
+                {safeActiveTab !== 'all' ? (
                   <>
                     <EditableImage
                       src={img.url}
@@ -263,7 +292,7 @@ export default function GallerySection({
               </div>
             ))}
 
-            {editMode && activeTab !== 'all' && (
+            {editMode && safeActiveTab !== 'all' && (
               <AddTileCard
                 onClick={handleAddImage}
                 ariaLabel="Add image"
