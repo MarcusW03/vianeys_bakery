@@ -1,6 +1,10 @@
 'use client';
 
 import Image from 'next/image';
+import Card from '@mui/material/Card';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
+import AddIcon from '@mui/icons-material/Add';
 import EditableText from '@/components/admin/EditableText';
 import EditableImage from '@/components/admin/EditableImage';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
@@ -66,24 +70,49 @@ export default function FeaturedGallery({
                   height={300}
                   className="w-full h-full object-cover"
                 />
-                <button
+                <IconButton
+                  size="small"
                   onClick={() => handleRemove(i)}
-                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs font-bold z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                  sx={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    zIndex: 1,
+                    bgcolor: 'error.main',
+                    color: 'white',
+                    width: 24,
+                    height: 24,
+                    opacity: 0,
+                    '.group:hover &': { opacity: 1 },
+                    '&:hover': { bgcolor: 'error.dark' },
+                  }}
                 >
-                  ×
-                </button>
+                  <CloseIcon sx={{ fontSize: 14 }} />
+                </IconButton>
               </div>
             ))}
-            <button
+            <Card
+              variant="outlined"
               onClick={handleAdd}
-              className="w-48 h-48 rounded-[var(--radius-md)] border-2 border-dashed flex items-center justify-center text-4xl hover:opacity-80 transition-opacity flex-shrink-0"
-              style={{
+              sx={{
+                cursor: 'pointer',
+                width: 192,
+                height: 192,
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderStyle: 'dashed',
+                borderWidth: 2,
                 borderColor: 'var(--theme-primary)',
                 color: 'var(--theme-primary)',
+                bgcolor: 'transparent',
+                boxShadow: 'none',
+                '&:hover': { opacity: 0.7 },
               }}
             >
-              +
-            </button>
+              <AddIcon sx={{ fontSize: 36 }} />
+            </Card>
           </div>
         ) : (
           // ── Customer view ──────────────────────────────────────────────────

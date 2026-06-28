@@ -521,18 +521,26 @@ export default function Sidebar({ config, adminName }: SidebarProps) {
   return (
     <>
       {/* ── Mobile hamburger button (customers on small screens) ── */}
-      <button
+      <IconButton
         onClick={() => setMobileOpen(true)}
         aria-label="Open navigation"
-        className="fixed top-4 left-4 z-50 flex items-center justify-center w-10 h-10 rounded-full shadow-lg md:hidden"
-        style={{
+        className="md:hidden"
+        sx={{
+          position: 'fixed',
+          top: 16,
+          left: 16,
+          zIndex: 50,
+          width: 40,
+          height: 40,
+          boxShadow: 2,
           background: 'color-mix(in srgb, var(--theme-secondary) 90%, white)',
           border: '1px solid color-mix(in srgb, var(--theme-primary) 25%, transparent)',
           color: 'var(--theme-accent)',
+          '&:hover': { background: 'color-mix(in srgb, var(--theme-secondary) 90%, white)' },
         }}
       >
         <MenuIcon sx={{ fontSize: 20 }} />
-      </button>
+      </IconButton>
 
       {/* ── Mobile drawer (temporary, slides in) ── */}
       <Drawer

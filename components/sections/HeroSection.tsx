@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Button from '@mui/material/Button';
 import EditableText from '@/components/admin/EditableText';
 import EditableImage from '@/components/admin/EditableImage';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
@@ -83,13 +84,23 @@ export default function HeroSection({
           />
         </p>
 
-        <a
+        <Button
           href="#how-to-order"
           onClick={(e) => {
             if (editMode) e.preventDefault();
           }}
-          className="inline-block font-semibold px-8 py-4 rounded-full transition-colors duration-200 text-lg text-white hover:opacity-90"
-          style={{ backgroundColor: 'var(--theme-primary)' }}
+          variant="contained"
+          size="large"
+          sx={{
+            borderRadius: 999,
+            px: 4,
+            py: 2,
+            fontSize: 18,
+            fontWeight: 600,
+            textTransform: 'none',
+            bgcolor: 'var(--theme-primary)',
+            '&:hover': { bgcolor: 'var(--theme-primary)', opacity: 0.9 },
+          }}
         >
           <EditableText
             value={data.ctaText}
@@ -97,7 +108,7 @@ export default function HeroSection({
             variant="dark"
             className="text-white"
           />
-        </a>
+        </Button>
       </div>
     </section>
   );

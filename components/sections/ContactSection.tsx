@@ -129,7 +129,7 @@ export default function ContactSection({
             </>
           ) : (
             validLinks.map((link) => (
-              <a
+              <Button
                 key={link.id}
                 href={link.url}
                 target={
@@ -138,11 +138,19 @@ export default function ContactSection({
                     : '_blank'
                 }
                 rel="noopener noreferrer"
-                className="px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200 hover:opacity-85 hover:shadow-md active:scale-[0.97]"
-                style={{ backgroundColor: 'var(--theme-primary)' }}
+                variant="contained"
+                sx={{
+                  borderRadius: 3,
+                  px: 3,
+                  py: 1.5,
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  bgcolor: 'var(--theme-primary)',
+                  '&:hover': { bgcolor: 'var(--theme-primary)', opacity: 0.85 },
+                }}
               >
                 {link.label}
-              </a>
+              </Button>
             ))
           )}
         </div>

@@ -4,13 +4,17 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
+import CloseIcon from '@mui/icons-material/Close';
+import AddIcon from '@mui/icons-material/Add';
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
 import EditableImage from '@/components/admin/EditableImage';
@@ -237,12 +241,25 @@ export default function GallerySection({
                       height={CELL}
                       className="w-full h-full object-cover"
                     />
-                    <button
+                    <IconButton
+                      size="small"
                       onClick={() => handleRemoveImage(i)}
-                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                      sx={{
+                        position: 'absolute',
+                        top: 4,
+                        right: 4,
+                        zIndex: 1,
+                        bgcolor: 'error.main',
+                        color: 'white',
+                        width: 20,
+                        height: 20,
+                        opacity: 0,
+                        '.group:hover &': { opacity: 1 },
+                        '&:hover': { bgcolor: 'error.dark' },
+                      }}
                     >
-                      ×
-                    </button>
+                      <CloseIcon sx={{ fontSize: 12 }} />
+                    </IconButton>
                   </>
                 ) : img.url ? (
                   <div className="relative w-full h-full">
@@ -259,18 +276,28 @@ export default function GallerySection({
             ))}
 
             {editMode && activeTab !== 'all' && (
-              <button
+              <Card
+                variant="outlined"
                 onClick={handleAddImage}
-                className="rounded-[var(--radius-md)] border-2 border-dashed flex items-center justify-center text-3xl hover:opacity-70 transition-opacity flex-shrink-0"
-                style={{
+                sx={{
+                  cursor: 'pointer',
                   width: CELL,
                   height: CELL,
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderStyle: 'dashed',
+                  borderWidth: 2,
                   borderColor: 'var(--theme-primary)',
                   color: 'var(--theme-primary)',
+                  bgcolor: 'transparent',
+                  boxShadow: 'none',
+                  '&:hover': { opacity: 0.7 },
                 }}
               >
-                +
-              </button>
+                <AddIcon sx={{ fontSize: 28 }} />
+              </Card>
             )}
           </div>
         ) : (
