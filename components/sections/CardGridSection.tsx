@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import EditableText from '@/components/admin/EditableText';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
 import AddTileCard from '@/components/sections/shared/AddTileCard';
@@ -22,6 +24,9 @@ export default function CardGridSection({
   const headingColor = resolveStyleColor(style.heading, 'var(--theme-accent)');
   const textColor = resolveStyleColor(style.text, '#4b5563');
 
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+
   const addItem = () => {
     const newItem: CardGridItem = {
       id: `item-${Date.now()}`,
@@ -34,6 +39,41 @@ export default function CardGridSection({
 
   const removeItem = (id: string) => {
     onContentChange({ items: items.filter((it) => it.id !== id) });
+  };
+
+  // ── Drag-to-reorder (insert, not swap) — same pattern as Sidebar.tsx's ──
+  // section nav and ManageSectionsDialog's section list.
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverId(targetId);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (!draggedId || draggedId === targetId) {
+      setDraggedId(null);
+      setDragOverId(null);
+      return;
+    }
+    const newOrder = items.map((it) => it.id);
+    const fromIdx = newOrder.indexOf(draggedId);
+    const toIdx = newOrder.indexOf(targetId);
+    newOrder.splice(fromIdx, 1);
+    newOrder.splice(toIdx, 0, draggedId);
+    onContentChange({ items: newOrder.map((id) => items.find((it) => it.id === id)!) });
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDragOverId(null);
   };
 
   return (
@@ -56,21 +96,48 @@ export default function CardGridSection({
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {items.map((item, i) => (
+          {items.map((item, i) => {
+            const isDragging = draggedId === item.id;
+            const isOver = dragOverId === item.id && !isDragging;
+            return (
             <Card
               key={item.id}
               variant="outlined"
               className="group"
+              draggable={editMode}
+              onDragStart={(e) => handleDragStart(e, item.id)}
+              onDragOver={(e) => handleDragOver(e, item.id)}
+              onDrop={(e) => handleDrop(e, item.id)}
+              onDragEnd={handleDragEnd}
               sx={{
                 position: 'relative',
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100%',
-                borderColor: 'color-mix(in srgb, var(--theme-secondary) 80%, transparent)',
-                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                borderColor: isOver
+                  ? 'var(--theme-primary)'
+                  : 'color-mix(in srgb, var(--theme-secondary) 80%, transparent)',
+                opacity: isDragging ? 0.4 : 1,
+                cursor: editMode ? 'grab' : undefined,
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.1s ease',
                 '&:hover': { transform: 'translateY(-3px)', boxShadow: 'var(--shadow-md)' },
               }}
             >
+              {editMode && (
+                <DragIndicatorIcon
+                  sx={{
+                    position: 'absolute',
+                    top: 8,
+                    left: 8,
+                    zIndex: 1,
+                    fontSize: 18,
+                    color: 'var(--theme-accent)',
+                    opacity: 0,
+                    pointerEvents: 'none',
+                    '.group:hover &': { opacity: 0.4 },
+                  }}
+                />
+              )}
               {editMode && <RemoveIconButton onClick={() => removeItem(item.id)} ariaLabel="Remove item" />}
 
               <CardContent sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -126,7 +193,8 @@ export default function CardGridSection({
                 </span>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
 
           {editMode && (
             <AddTileCard onClick={addItem} ariaLabel="Add item" sx={{ minHeight: 160 }} />
