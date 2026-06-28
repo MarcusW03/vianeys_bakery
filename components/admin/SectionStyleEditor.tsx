@@ -102,7 +102,12 @@ export default function SectionStyleEditor({
                     title="Custom color"
                     className="w-5 h-5 rounded-full cursor-pointer border-0 p-0 flex-shrink-0"
                     style={{
-                      outline: isCustomValue(current) ? '2px solid #1a1a1a' : 'none',
+                      // Always keep a visible border — without one, a white/light
+                      // custom value (or the unselected default swap) disappears
+                      // against this panel's white background.
+                      outline: isCustomValue(current)
+                        ? '2px solid #1a1a1a'
+                        : '1px solid rgba(0,0,0,0.15)',
                       outlineOffset: 1,
                     }}
                   />

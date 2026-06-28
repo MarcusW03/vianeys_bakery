@@ -111,7 +111,15 @@ export const getConfig = cache(async (): Promise<SiteConfig> => {
     return defaultConfig;
   }
 
-  const res = await fetch(blobs[0].url, { next: { revalidate: 60 } });
+  // saveConfig() overwrites config.json at this same URL on every save
+  // (allowOverwrite: true). Vercel's Blob CDN caches by URL, so re-fetching
+  // the bare URL right after a save can return stale, pre-save bytes even
+  // though the write already succeeded. Appending the blob's own
+  // `uploadedAt` (which changes on every overwrite, via list() — an
+  // authenticated metadata call, not the cached public URL) busts that
+  // cache: each save gets treated as a brand-new cache key.
+  const cacheBustedUrl = `${blobs[0].url}?v=${new Date(blobs[0].uploadedAt).getTime()}`;
+  const res = await fetch(cacheBustedUrl, { cache: 'no-store' });
   if (!res.ok) return defaultConfig;
   return mergeWithDefaults(await res.json() as Partial<SiteConfig>);
 });

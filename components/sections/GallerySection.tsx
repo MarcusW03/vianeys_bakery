@@ -263,41 +263,45 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
             ) : (
               /*
                * CSS grid with gridAutoFlow:column fills down first, then right.
-               * gridTemplateRows sets how many rows tall the grid is:
-               * 1 row on mobile, 2 on tablet, 3 on desktop (see galleryRows state).
+               * gridTemplateRows sets how many rows tall the grid is — capped to
+               * the number of images so a single image doesn't reserve empty
+               * rows beneath it. Outer flex wrapper centers the grid when it's
+               * narrower than the viewport, and scrolls when it's wider.
                */
               <div
-                style={{
-                  display: 'grid',
-                  gridTemplateRows: `repeat(${galleryRows}, ${CELL}px)`,
-                  gridAutoFlow: 'column',
-                  gridAutoColumns: `${CELL}px`,
-                  gap: 12,
-                  // min-content so the container can be wider than the viewport
-                  width: 'max-content',
-                  minWidth: '100%',
-                }}
+                className="flex justify-center"
+                style={{ width: 'max-content', minWidth: '100%' }}
               >
-                {currentImages.map((img, i) => (
-                  <div
-                    key={img.id}
-                    // relative is REQUIRED for next/image fill
-                    className="relative rounded-[var(--radius-md)] overflow-hidden cursor-pointer group"
-                    style={{ width: CELL, height: CELL }}
-                    onClick={() => {
-                      setLightboxIndex(i);
-                      setLightboxOpen(true);
-                    }}
-                  >
-                    <Image
-                      src={img.url}
-                      alt={img.alt || `Gallery ${i + 1}`}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      sizes={`(max-width: 768px) 90vw, ${CELL}px`}
-                    />
-                  </div>
-                ))}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateRows: `repeat(${Math.max(1, Math.min(galleryRows, currentImages.length))}, ${CELL}px)`,
+                    gridAutoFlow: 'column',
+                    gridAutoColumns: `${CELL}px`,
+                    gap: 12,
+                  }}
+                >
+                  {currentImages.map((img, i) => (
+                    <div
+                      key={img.id}
+                      // relative is REQUIRED for next/image fill
+                      className="relative rounded-[var(--radius-md)] overflow-hidden cursor-pointer group"
+                      style={{ width: CELL, height: CELL }}
+                      onClick={() => {
+                        setLightboxIndex(i);
+                        setLightboxOpen(true);
+                      }}
+                    >
+                      <Image
+                        src={img.url}
+                        alt={img.alt || `Gallery ${i + 1}`}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        sizes={`(max-width: 768px) 90vw, ${CELL}px`}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

@@ -4,6 +4,9 @@ import { saveConfig } from '@/lib/config/writer';
 import type { SiteConfig } from '@/lib/config/types';
 
 export const runtime = 'nodejs';
+// Must never be served from a route cache — admins need the freshly saved
+// config the instant they re-enter edit mode, not a stale cached snapshot.
+export const dynamic = 'force-dynamic';
 
 export async function GET(): Promise<Response> {
   const config = await getConfig();
