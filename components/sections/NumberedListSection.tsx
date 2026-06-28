@@ -1,5 +1,6 @@
 'use client';
 
+import Card from '@mui/material/Card';
 import EditableText from '@/components/admin/EditableText';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
 import AddTileCard from '@/components/sections/shared/AddTileCard';
@@ -60,7 +61,20 @@ export default function NumberedListSection({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
           {steps.map((step, i) => (
-            <div key={step.id} className="relative flex gap-4 group">
+            <Card
+              key={step.id}
+              variant="outlined"
+              className="group"
+              sx={{
+                position: 'relative',
+                display: 'flex',
+                gap: 2,
+                p: 2.5,
+                borderColor: 'color-mix(in srgb, var(--theme-secondary) 80%, transparent)',
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                '&:hover': { transform: 'translateY(-3px)', boxShadow: 'var(--shadow-md)' },
+              }}
+            >
               {editMode && <RemoveIconButton onClick={() => removeStep(step.id)} ariaLabel="Remove step" />}
               {/* Step number badge */}
               <div
@@ -97,7 +111,7 @@ export default function NumberedListSection({
                   />
                 </p>
               </div>
-            </div>
+            </Card>
           ))}
 
           {editMode && (

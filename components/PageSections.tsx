@@ -58,12 +58,13 @@ export default function PageSections({ initialConfig, adminName }: PageSectionsP
       {/*
         MUI's permanent Drawer renders a `flex: 0 0 auto` wrapper div around
         the (visually fixed-position) Paper — that wrapper takes up real
-        space in this flex row, so it already pushes `main` over by exactly
-        calc(var(--sidebar-width) + var(--page-gutter)) on its own (Sidebar.tsx
-        reserves that extra gutter so main clears the floating/inset Paper
-        with a matching gap on both sides). Do NOT also add a marginLeft/offset
-        class here — that double-counts the width and creates a huge gap.
-        On mobile the sidebar's wrapper is hidden (width 0), so main is full width.
+        space in this flex row, so it already pushes `main`'s flex box over
+        by exactly calc(var(--sidebar-width) + var(--page-gutter)) on its
+        own. The marginLeft below is a *separate* gap on top of that — it's
+        what puts visible space between the sidebar Paper's right edge and
+        main's own canvas boundary, not a duplicate of the reserved width.
+        On mobile the sidebar's wrapper is hidden (width 0), so this margin
+        is the only thing keeping main's canvas off the left edge there too.
       */}
       <main
         style={{
@@ -72,6 +73,15 @@ export default function PageSections({ initialConfig, adminName }: PageSectionsP
           flexDirection: 'column',
           gap: 'var(--page-gutter)',
           padding: 'var(--page-gutter)',
+          margin: 'var(--page-gutter)',
+          // The whole content column reads as its own floating "canvas"
+          // object, the same way the sidebar already does — sections keep
+          // their own individual rounded-card treatment inside it, so the
+          // gaps between them now reveal this canvas's white surface
+          // instead of the page background directly.
+          background: '#ffffff',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: 'var(--shadow-lg)',
         }}
         className="w-full"
       >
