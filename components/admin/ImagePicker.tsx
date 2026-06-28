@@ -48,7 +48,11 @@ export default function ImagePicker({
   const fetchImages = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/images', { cache: 'no-store' });
+      // Every upload (see handleFileChange below) always goes to 'uploads/',
+      // so scoping the list to that prefix lets the storage adapter filter
+      // server-side instead of listing the entire store (which also holds
+      // non-image objects like config.json) and filtering after the fact.
+      const res = await fetch('/api/images?prefix=uploads', { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to load images');
       const data = (await res.json()) as ListItem[];
       setImages(data);
