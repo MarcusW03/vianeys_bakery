@@ -124,14 +124,17 @@ export default function ImagePicker({
       if (instance.type === 'hero' && (instance.content as { imageUrl: string }).imageUrl === url) {
         locs.push('Hero background');
       }
-      if (instance.type === 'about' && (instance.content as { imageUrl: string }).imageUrl === url) {
-        locs.push('About section');
+      if (
+        instance.type === 'image-with-text' &&
+        (instance.content as { imageUrl: string }).imageUrl === url
+      ) {
+        locs.push('Image with Text section');
       }
       if (
-        instance.type === 'featured' &&
+        instance.type === 'featured-gallery' &&
         (instance.content as { imageUrls: string[] }).imageUrls.includes(url)
       ) {
-        locs.push('Our Work');
+        locs.push('Featured Gallery');
       }
       if (instance.type === 'gallery') {
         (instance.content as { categories: { name: string; images: { url: string }[] }[] }).categories.forEach(

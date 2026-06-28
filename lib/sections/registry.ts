@@ -3,19 +3,19 @@ import type {
   SectionInstance,
   SectionStyle,
   HeroContent,
-  FeaturedContent,
+  FeaturedGalleryContent,
   GalleryContent,
-  PricingContent,
-  HowToOrderContent,
-  AboutContent,
+  CardGridContent,
+  NumberedListContent,
+  ImageWithTextContent,
   ContactSectionContent,
 } from '@/lib/config/types';
 import HeroSection from '@/components/sections/HeroSection';
-import FeaturedGallery from '@/components/sections/FeaturedGallery';
+import FeaturedGallerySection from '@/components/sections/FeaturedGallerySection';
 import GallerySection from '@/components/sections/GallerySection';
-import PricingSection from '@/components/sections/PricingSection';
-import HowToOrderSection from '@/components/sections/HowToOrderSection';
-import AboutSection from '@/components/sections/AboutSection';
+import CardGridSection from '@/components/sections/CardGridSection';
+import NumberedListSection from '@/components/sections/NumberedListSection';
+import ImageWithTextSection from '@/components/sections/ImageWithTextSection';
 import ContactSection from '@/components/sections/ContactSection';
 
 export interface SectionRendererProps<TContent = unknown> {
@@ -55,16 +55,16 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition<any>> = {
     Renderer: HeroSection,
     showInNav: false,
   },
-  featured: {
-    type: 'featured',
+  'featured-gallery': {
+    type: 'featured-gallery',
     label: 'Featured Gallery',
     defaultContent: {
       imageUrls: [],
       sectionTitle: 'My Work',
-    } satisfies FeaturedContent,
+    } satisfies FeaturedGalleryContent,
     defaultStyle: { background: 'color2', heading: 'color3', text: 'color3' },
-    Renderer: FeaturedGallery,
-    isEmpty: (content: FeaturedContent) => content.imageUrls.filter(Boolean).length === 0,
+    Renderer: FeaturedGallerySection,
+    isEmpty: (content: FeaturedGalleryContent) => content.imageUrls.filter(Boolean).length === 0,
   },
   gallery: {
     type: 'gallery',
@@ -82,43 +82,43 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition<any>> = {
     Renderer: GallerySection,
     isEmpty: (content: GalleryContent) => content.categories.length === 0,
   },
-  pricing: {
-    type: 'pricing',
+  'card-grid': {
+    type: 'card-grid',
     label: 'Card Grid',
     defaultContent: {
       headline: 'Pricing',
       items: [
         {
           id: 'custom-cake',
-          name: 'Small personalized Cake',
+          title: 'Small personalized Cake',
           description: 'Fully customized design, flavors, and fillings. Feds 10–50 guests.',
-          priceRange: 'Starting at $85',
+          badgeText: 'Starting at $85',
         },
         {
           id: 'wedding-cake',
-          name: 'Wedding Cake',
+          title: 'Wedding Cake',
           description: 'Multi-tier celebration cakes with premium ingredients and detailed decoration.',
-          priceRange: 'Starting at $250',
+          badgeText: 'Starting at $250',
         },
         {
           id: 'cupcakes',
-          name: 'Cupcakes (dozen)',
+          title: 'Cupcakes (dozen)',
           description: 'Custom flavored cupcakes with buttercream or fondant decorations.',
-          priceRange: 'Starting at $36',
+          badgeText: 'Starting at $36',
         },
         {
           id: 'pastry-box',
-          name: 'Pastry Box',
+          title: 'Pastry Box',
           description: 'Assorted pastries — great for events, gifts, and celebrations.',
-          priceRange: 'Starting at $45',
+          badgeText: 'Starting at $45',
         },
       ],
-    } satisfies PricingContent,
+    } satisfies CardGridContent,
     defaultStyle: { background: 'color2', heading: '#ff9999', text: 'color3' },
-    Renderer: PricingSection,
+    Renderer: CardGridSection,
   },
-  'how-to-order': {
-    type: 'how-to-order',
+  'numbered-list': {
+    type: 'numbered-list',
     label: 'Numbered List',
     defaultContent: {
       headline: 'How to Order',
@@ -148,20 +148,20 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition<any>> = {
           description: 'Your order will be ready on the agreed date. Local delivery available.',
         },
       ],
-    } satisfies HowToOrderContent,
+    } satisfies NumberedListContent,
     defaultStyle: { background: '#e6e6e6', heading: 'color3', text: 'color3' },
-    Renderer: HowToOrderSection,
+    Renderer: NumberedListSection,
   },
-  about: {
-    type: 'about',
+  'image-with-text': {
+    type: 'image-with-text',
     label: 'Image with Text',
     defaultContent: {
       headline: 'Made with Passion',
       body: "Hi, I'm Vianey! I've been baking custom cakes and pastries since 2015. Every order is made from scratch using quality ingredients — no shortcuts, no mixes. I love turning your ideas into edible art.",
       imageUrl: '',
-    } satisfies AboutContent,
+    } satisfies ImageWithTextContent,
     defaultStyle: { background: '#ffffff', heading: 'color3', text: 'color3' },
-    Renderer: AboutSection,
+    Renderer: ImageWithTextSection,
   },
   contact: {
     type: 'contact',
@@ -178,11 +178,11 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition<any>> = {
 
 export const DEFAULT_SECTION_ORDER = [
   'hero',
-  'featured',
+  'featured-gallery',
   'gallery',
-  'pricing',
-  'how-to-order',
-  'about',
+  'card-grid',
+  'numbered-list',
+  'image-with-text',
   'contact',
 ];
 

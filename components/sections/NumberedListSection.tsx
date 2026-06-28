@@ -2,15 +2,15 @@
 
 import EditableText from '@/components/admin/EditableText';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
-import type { HowToOrderContent } from '@/lib/config/types';
+import type { NumberedListContent } from '@/lib/config/types';
 import { resolveStyleColor } from '@/lib/config/section-background';
 import type { SectionRendererProps } from '@/lib/sections/registry';
 
-export default function HowToOrderSection({
+export default function NumberedListSection({
   instance,
   editMode,
   onContentChange,
-}: SectionRendererProps<HowToOrderContent>) {
+}: SectionRendererProps<NumberedListContent>) {
   const { headline, steps } = instance.content;
   const style = instance.style;
   const headingColor = resolveStyleColor(style.heading, 'var(--theme-accent)');
@@ -18,7 +18,7 @@ export default function HowToOrderSection({
 
   return (
     <section
-      id="how-to-order"
+      id="numbered-list"
       className={`py-20 px-6 ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-secondary)') }}
     >

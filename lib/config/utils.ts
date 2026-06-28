@@ -1,4 +1,10 @@
-import type { SiteConfig, HeroContent, AboutContent, FeaturedContent, GalleryContent } from './types';
+import type {
+  SiteConfig,
+  HeroContent,
+  ImageWithTextContent,
+  FeaturedGalleryContent,
+  GalleryContent,
+} from './types';
 
 /**
  * Strips every reference to `url` from a config (featured images, gallery
@@ -13,14 +19,14 @@ export function removeImageUrlFromConfig(config: SiteConfig, url: string): SiteC
     sections: config.sections.map((instance) => {
       switch (instance.type) {
         case 'hero':
-        case 'about': {
-          const content = instance.content as HeroContent | AboutContent;
+        case 'image-with-text': {
+          const content = instance.content as HeroContent | ImageWithTextContent;
           return content.imageUrl === url
             ? { ...instance, content: { ...content, imageUrl: '' } }
             : instance;
         }
-        case 'featured': {
-          const content = instance.content as FeaturedContent;
+        case 'featured-gallery': {
+          const content = instance.content as FeaturedGalleryContent;
           return {
             ...instance,
             content: { ...content, imageUrls: content.imageUrls.filter((u) => u !== url) },

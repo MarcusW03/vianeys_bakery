@@ -1,22 +1,20 @@
 'use client';
 
 import Image from 'next/image';
-import Card from '@mui/material/Card';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
-import AddIcon from '@mui/icons-material/Add';
 import EditableText from '@/components/admin/EditableText';
 import EditableImage from '@/components/admin/EditableImage';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
+import AddTileCard from '@/components/sections/shared/AddTileCard';
+import RemoveIconButton from '@/components/sections/shared/RemoveIconButton';
 import { resolveStyleColor } from '@/lib/config/section-background';
-import type { FeaturedContent } from '@/lib/config/types';
+import type { FeaturedGalleryContent } from '@/lib/config/types';
 import type { SectionRendererProps } from '@/lib/sections/registry';
 
-export default function FeaturedGallery({
+export default function FeaturedGallerySection({
   instance,
   editMode,
   onContentChange,
-}: SectionRendererProps<FeaturedContent>) {
+}: SectionRendererProps<FeaturedGalleryContent>) {
   const { imageUrls, sectionTitle } = instance.content;
   const style = instance.style;
   const headingColor = resolveStyleColor(style.heading, 'var(--theme-accent)');
@@ -38,7 +36,7 @@ export default function FeaturedGallery({
 
   return (
     <section
-      id="featured"
+      id="featured-gallery"
       className={`py-20 px-6 ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-secondary)') }}
     >
@@ -70,49 +68,15 @@ export default function FeaturedGallery({
                   height={300}
                   className="w-full h-full object-cover"
                 />
-                <IconButton
-                  size="small"
-                  onClick={() => handleRemove(i)}
-                  sx={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    zIndex: 1,
-                    bgcolor: 'error.main',
-                    color: 'white',
-                    width: 24,
-                    height: 24,
-                    opacity: 0,
-                    '.group:hover &': { opacity: 1 },
-                    '&:hover': { bgcolor: 'error.dark' },
-                  }}
-                >
-                  <CloseIcon sx={{ fontSize: 14 }} />
-                </IconButton>
+                <RemoveIconButton onClick={() => handleRemove(i)} size={24} ariaLabel="Remove image" />
               </div>
             ))}
-            <Card
-              variant="outlined"
+            <AddTileCard
               onClick={handleAdd}
-              sx={{
-                cursor: 'pointer',
-                width: 192,
-                height: 192,
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderStyle: 'dashed',
-                borderWidth: 2,
-                borderColor: 'var(--theme-primary)',
-                color: 'var(--theme-primary)',
-                bgcolor: 'transparent',
-                boxShadow: 'none',
-                '&:hover': { opacity: 0.7 },
-              }}
-            >
-              <AddIcon sx={{ fontSize: 36 }} />
-            </Card>
+              ariaLabel="Add image"
+              iconSize={36}
+              sx={{ width: 192, height: 192, flexShrink: 0 }}
+            />
           </div>
         ) : (
           // ── Customer view ──────────────────────────────────────────────────

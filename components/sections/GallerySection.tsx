@@ -4,22 +4,20 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import IconButton from '@mui/material/IconButton';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
-import CloseIcon from '@mui/icons-material/Close';
-import AddIcon from '@mui/icons-material/Add';
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
 import EditableImage from '@/components/admin/EditableImage';
 import EditableText from '@/components/admin/EditableText';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
+import AddTileCard from '@/components/sections/shared/AddTileCard';
+import RemoveIconButton from '@/components/sections/shared/RemoveIconButton';
 import { resolveStyleColor } from '@/lib/config/section-background';
 import type { GalleryCategory, GalleryImage, GalleryContent } from '@/lib/config/types';
 import type { SectionRendererProps } from '@/lib/sections/registry';
@@ -121,7 +119,6 @@ export default function GallerySection({
       id: `img-${Date.now()}`,
       url: '',
       alt: '',
-      featured: false,
     };
     updateCategory(activeCategory.id, {
       images: [...activeCategory.images, newImg],
@@ -241,25 +238,14 @@ export default function GallerySection({
                       height={CELL}
                       className="w-full h-full object-cover"
                     />
-                    <IconButton
-                      size="small"
+                    <RemoveIconButton
                       onClick={() => handleRemoveImage(i)}
-                      sx={{
-                        position: 'absolute',
-                        top: 4,
-                        right: 4,
-                        zIndex: 1,
-                        bgcolor: 'error.main',
-                        color: 'white',
-                        width: 20,
-                        height: 20,
-                        opacity: 0,
-                        '.group:hover &': { opacity: 1 },
-                        '&:hover': { bgcolor: 'error.dark' },
-                      }}
-                    >
-                      <CloseIcon sx={{ fontSize: 12 }} />
-                    </IconButton>
+                      size={20}
+                      iconSize={12}
+                      top={4}
+                      right={4}
+                      ariaLabel="Remove image"
+                    />
                   </>
                 ) : img.url ? (
                   <div className="relative w-full h-full">
@@ -276,28 +262,12 @@ export default function GallerySection({
             ))}
 
             {editMode && activeTab !== 'all' && (
-              <Card
-                variant="outlined"
+              <AddTileCard
                 onClick={handleAddImage}
-                sx={{
-                  cursor: 'pointer',
-                  width: CELL,
-                  height: CELL,
-                  flexShrink: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderStyle: 'dashed',
-                  borderWidth: 2,
-                  borderColor: 'var(--theme-primary)',
-                  color: 'var(--theme-primary)',
-                  bgcolor: 'transparent',
-                  boxShadow: 'none',
-                  '&:hover': { opacity: 0.7 },
-                }}
-              >
-                <AddIcon sx={{ fontSize: 28 }} />
-              </Card>
+                ariaLabel="Add image"
+                iconSize={28}
+                sx={{ width: CELL, height: CELL, flexShrink: 0 }}
+              />
             )}
           </div>
         ) : (

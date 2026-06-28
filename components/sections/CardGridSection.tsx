@@ -2,31 +2,30 @@
 
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
-import AddIcon from '@mui/icons-material/Add';
 import EditableText from '@/components/admin/EditableText';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
-import type { PricingItem, PricingContent } from '@/lib/config/types';
+import AddTileCard from '@/components/sections/shared/AddTileCard';
+import RemoveIconButton from '@/components/sections/shared/RemoveIconButton';
+import type { CardGridItem, CardGridContent } from '@/lib/config/types';
 import { resolveStyleColor } from '@/lib/config/section-background';
 import type { SectionRendererProps } from '@/lib/sections/registry';
 
-export default function PricingSection({
+export default function CardGridSection({
   instance,
   editMode,
   onContentChange,
-}: SectionRendererProps<PricingContent>) {
+}: SectionRendererProps<CardGridContent>) {
   const { headline, items } = instance.content;
   const style = instance.style;
   const headingColor = resolveStyleColor(style.heading, 'var(--theme-accent)');
   const textColor = resolveStyleColor(style.text, '#4b5563');
 
   const addItem = () => {
-    const newItem: PricingItem = {
+    const newItem: CardGridItem = {
       id: `item-${Date.now()}`,
-      name: 'New Item',
+      title: 'New Item',
       description: 'Add a description',
-      priceRange: 'Price TBD',
+      badgeText: 'Price TBD',
     };
     onContentChange({ items: [...items, newItem] });
   };
@@ -37,7 +36,7 @@ export default function PricingSection({
 
   return (
     <section
-      id="pricing"
+      id="card-grid"
       className={`py-20 px-6 ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-secondary)') }}
     >
@@ -56,41 +55,22 @@ export default function PricingSection({
             <Card
               key={item.id}
               variant="outlined"
+              className="group"
               sx={{
                 position: 'relative',
                 borderColor: 'color-mix(in srgb, var(--theme-secondary) 80%, transparent)',
                 '&:hover': { boxShadow: 2 },
               }}
             >
-              {editMode && (
-                <IconButton
-                  size="small"
-                  onClick={() => removeItem(item.id)}
-                  sx={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    zIndex: 1,
-                    bgcolor: 'error.main',
-                    color: 'white',
-                    width: 20,
-                    height: 20,
-                    opacity: 0,
-                    '.MuiCard-root:hover &': { opacity: 1 },
-                    '&:hover': { bgcolor: 'error.dark' },
-                  }}
-                >
-                  <CloseIcon sx={{ fontSize: 14 }} />
-                </IconButton>
-              )}
+              {editMode && <RemoveIconButton onClick={() => removeItem(item.id)} ariaLabel="Remove item" />}
 
               <CardContent>
                 <h3 className="text-xl font-semibold mb-2" style={{ color: headingColor }}>
                   <EditableText
-                    value={item.name}
+                    value={item.title}
                     onChange={(val) =>
                       onContentChange({
-                        items: items.map((it, j) => (j === i ? { ...it, name: val } : it)),
+                        items: items.map((it, j) => (j === i ? { ...it, title: val } : it)),
                       })
                     }
                     variant="light"
@@ -120,11 +100,11 @@ export default function PricingSection({
                   }}
                 >
                   <EditableText
-                    value={item.priceRange}
+                    value={item.badgeText}
                     onChange={(val) =>
                       onContentChange({
                         items: items.map((it, j) =>
-                          j === i ? { ...it, priceRange: val } : it,
+                          j === i ? { ...it, badgeText: val } : it,
                         ),
                       })
                     }
@@ -136,26 +116,7 @@ export default function PricingSection({
           ))}
 
           {editMode && (
-            <Card
-              variant="outlined"
-              onClick={addItem}
-              sx={{
-                cursor: 'pointer',
-                minHeight: 160,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderStyle: 'dashed',
-                borderWidth: 2,
-                borderColor: 'var(--theme-primary)',
-                color: 'var(--theme-primary)',
-                bgcolor: 'transparent',
-                boxShadow: 'none',
-                '&:hover': { opacity: 0.7 },
-              }}
-            >
-              <AddIcon sx={{ fontSize: 32 }} />
-            </Card>
+            <AddTileCard onClick={addItem} ariaLabel="Add item" sx={{ minHeight: 160 }} />
           )}
         </div>
       </div>

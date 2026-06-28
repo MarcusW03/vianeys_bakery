@@ -4,15 +4,15 @@ import Image from 'next/image';
 import EditableText from '@/components/admin/EditableText';
 import EditableImage from '@/components/admin/EditableImage';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
-import type { AboutContent } from '@/lib/config/types';
+import type { ImageWithTextContent } from '@/lib/config/types';
 import { resolveStyleColor } from '@/lib/config/section-background';
 import type { SectionRendererProps } from '@/lib/sections/registry';
 
-export default function AboutSection({
+export default function ImageWithTextSection({
   instance,
   editMode,
   onContentChange,
-}: SectionRendererProps<AboutContent>) {
+}: SectionRendererProps<ImageWithTextContent>) {
   const data = instance.content;
   const style = instance.style;
   const headingColor = resolveStyleColor(style.heading, 'var(--theme-accent)');
@@ -20,7 +20,7 @@ export default function AboutSection({
 
   return (
     <section
-      id="about"
+      id="image-with-text"
       className={`py-20 px-6 ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, '#ffffff') }}
     >

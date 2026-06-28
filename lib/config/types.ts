@@ -2,7 +2,6 @@ export interface GalleryImage {
   id: string;
   url: string;
   alt: string;
-  featured: boolean;
 }
 
 export interface GalleryCategory {
@@ -11,14 +10,14 @@ export interface GalleryCategory {
   images: GalleryImage[];
 }
 
-export interface PricingItem {
+export interface CardGridItem {
   id: string;
-  name: string;
+  title: string;
   description: string;
-  priceRange: string;
+  badgeText: string;
 }
 
-export interface OrderStep {
+export interface NumberedListItem {
   id: string;
   stepNumber: number;
   title: string;
@@ -32,7 +31,7 @@ export interface HeroContent {
   imageUrl: string;
 }
 
-export interface FeaturedContent {
+export interface FeaturedGalleryContent {
   imageUrls: string[];
   sectionTitle: string;
 }
@@ -42,17 +41,17 @@ export interface GalleryContent {
   sectionTitle: string;
 }
 
-export interface PricingContent {
+export interface CardGridContent {
   headline: string;
-  items: PricingItem[];
+  items: CardGridItem[];
 }
 
-export interface HowToOrderContent {
+export interface NumberedListContent {
   headline: string;
-  steps: OrderStep[];
+  steps: NumberedListItem[];
 }
 
-export interface AboutContent {
+export interface ImageWithTextContent {
   headline: string;
   body: string;
   imageUrl: string;
