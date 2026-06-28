@@ -6,6 +6,7 @@ import { useThemeColors } from '@/components/DynamicThemeProvider';
 import type { SiteConfig } from '@/lib/config/types';
 import { SECTION_REGISTRY } from '@/lib/sections/registry';
 import Sidebar from '@/components/admin/Sidebar';
+import AdminToolbar from '@/components/admin/AdminToolbar';
 
 interface PageSectionsProps {
   initialConfig: SiteConfig;
@@ -44,6 +45,7 @@ export default function PageSections({ initialConfig, adminName }: PageSectionsP
     // On mobile the sidebar is a temporary overlay, so main takes full width.
     <div style={{ display: 'flex', width: '100%', minHeight: '100vh' }}>
       <Sidebar config={config} adminName={adminName} />
+      <AdminToolbar config={config} />
 
       {/*
         MUI's permanent Drawer renders a `flex: 0 0 auto` wrapper div around

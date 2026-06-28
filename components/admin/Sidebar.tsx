@@ -1,81 +1,33 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { signOut } from 'next-auth/react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
+import { useState } from 'react';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
 import TextField from '@mui/material/TextField';
-import EditIcon from '@mui/icons-material/Edit';
 import EyeIcon from '@mui/icons-material/Visibility';
 import EyeOffIcon from '@mui/icons-material/VisibilityOff';
-import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
-import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
-import ViewQuiltIcon from '@mui/icons-material/ViewQuilt';
-import SaveIcon from '@mui/icons-material/Save';
-import UndoIcon from '@mui/icons-material/Undo';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { useAdmin } from '@/lib/admin-context';
 import type { SiteConfig } from '@/lib/config/types';
 import { SECTION_REGISTRY, getInstanceLabel, getSectionAnchorId } from '@/lib/sections/registry';
-import ImagePicker from './ImagePicker';
-import ManageSectionsDialog from './ManageSectionsDialog';
-
 
 interface SidebarProps {
   config: SiteConfig;
   adminName?: string;
 }
 
-// ─── Color swatch that previews instantly but only commits to global state ────
-// when the OS color picker actually closes (native 'change' event), instead of
-// on every drag tick (React's onChange maps to the continuous 'input' event).
-// This avoids a full MUI theme rebuild + CSS var write on every pixel of drag.
-function ColorSwatchInput({
-  value,
-  onCommit,
-}: {
-  value: string;
-  onCommit: (v: string) => void;
-}) {
-  const [local, setLocal] = useState(value);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => setLocal(value), [value]);
-
-  useEffect(() => {
-    const el = inputRef.current;
-    if (!el) return;
-    const handleChange = (e: Event) => onCommit((e.target as HTMLInputElement).value);
-    el.addEventListener('change', handleChange);
-    return () => el.removeEventListener('change', handleChange);
-  }, [onCommit]);
-
-  return (
-    <input
-      ref={inputRef}
-      type="color"
-      value={local}
-      onChange={(e) => setLocal(e.target.value)}
-      onBlur={(e) => onCommit(e.target.value)}
-      className="w-9 h-9 rounded-[var(--radius-sm)] cursor-pointer border-0 p-0 block"
-      style={{ outline: '2px solid color-mix(in srgb, var(--theme-accent) 20%, transparent)', outlineOffset: 1 }}
-    />
-  );
-}
-
 // ─── Shared nav content rendered inside both the permanent and mobile drawers ─
+// Purely customer-facing nav + the inline-editable site name — all admin
+// tooling (Edit/Save/Discard, Manage Sections, Image Library, Color Palette,
+// Sign Out) lives in AdminToolbar instead. The nav's own drag-reorder and
+// per-item visibility toggle stay here since they manipulate these nav items
+// directly, not generic admin tools.
 interface NavContentProps {
   config: SiteConfig;
   adminName?: string;
@@ -83,35 +35,20 @@ interface NavContentProps {
 }
 
 function NavContent({ config, adminName, onClose }: NavContentProps) {
-  const router = useRouter();
   const {
     isAdmin,
     editMode,
-    isSaving,
     workingConfig,
-    enterEditMode,
-    exitEditMode,
-    saveChanges,
-    discardChanges,
-    updateTheme,
     toggleSectionVisibility,
     reorderSections,
     updateSiteName,
   } = useAdmin();
 
-  const [imageLibraryOpen, setImageLibraryOpen] = useState(false);
-  const [manageSectionsOpen, setManageSectionsOpen] = useState(false);
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: 'success' | 'error';
-  }>({ open: false, message: '', severity: 'success' });
   const [draggedSection, setDraggedSection] = useState<string | null>(null);
   const [dragOverSection, setDragOverSection] = useState<string | null>(null);
 
   const displayConfig = editMode && workingConfig ? workingConfig : config;
   const sections = displayConfig.sections;
-  const theme = displayConfig.theme;
 
   // A section is "effectively empty" for a customer when its own component
   // would render null — asks the registry's declared isEmpty() rather than
@@ -129,17 +66,6 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
       : sections.filter(
           (s) => SECTION_REGISTRY[s.type]?.showInNav !== false && !s.hidden && !isEffectivelyEmpty(s),
         );
-
-  const handleSave = async () => {
-    const result = await saveChanges();
-    if (result.ok) {
-      router.refresh();
-      exitEditMode();
-      setSnackbar({ open: true, message: 'Changes saved!', severity: 'success' });
-    } else {
-      setSnackbar({ open: true, message: result.error ?? 'Save failed', severity: 'error' });
-    }
-  };
 
   const scrollTo = (anchorId: string) => {
     onClose?.();
@@ -234,50 +160,6 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
         )}
       </div>
 
-      {/* ── Admin edit controls ── */}
-      {isAdmin && (
-        <div className="px-2.5 py-2.5 border-b" style={{ borderColor: 'color-mix(in srgb, var(--theme-primary) 20%, transparent)' }}>
-          {!editMode ? (
-            <Button
-              onClick={enterEditMode}
-              fullWidth
-              variant="contained"
-              startIcon={<EditIcon sx={{ fontSize: 16 }} />}
-              sx={{ background: 'var(--theme-primary)', '&:hover': { background: 'var(--theme-primary)', opacity: 0.9 } }}
-            >
-              Edit Site
-            </Button>
-          ) : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                fullWidth
-                variant="contained"
-                startIcon={isSaving ? <CircularProgress size={14} sx={{ color: 'white' }} /> : <SaveIcon sx={{ fontSize: 15 }} />}
-                sx={{ background: 'var(--theme-primary)', '&:hover': { background: 'var(--theme-primary)', opacity: 0.9 } }}
-              >
-                {isSaving ? 'Saving…' : 'Save Changes'}
-              </Button>
-              <Button
-                onClick={discardChanges}
-                disabled={isSaving}
-                fullWidth
-                variant="outlined"
-                startIcon={<UndoIcon sx={{ fontSize: 15 }} />}
-                sx={{
-                  background: 'color-mix(in srgb, var(--theme-accent) 10%, transparent)',
-                  color: 'var(--theme-accent)',
-                  borderColor: 'color-mix(in srgb, var(--theme-accent) 25%, transparent)',
-                }}
-              >
-                Discard
-              </Button>
-            </Box>
-          )}
-        </div>
-      )}
-
       {/* ── Section navigation ── */}
       <nav className="flex-1 overflow-y-auto px-1.5 py-1.5 min-h-0">
         {isAdmin && editMode && (
@@ -361,139 +243,12 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
           })}
         </List>
       </nav>
-
-      {/* ── Color palette — 3 reusable swatches. Each section picks which of ── */
-      /*    these (or a custom color) to use for its background/heading/text  */
-      /*    via the small palette icon shown on the section itself in edit    */
-      /*    mode — see SectionStyleEditor.                                    */}
-      {isAdmin && editMode && theme && (
-        <div
-          className="px-2.5 py-2.5"
-          style={{
-            borderTop: '1px solid color-mix(in srgb, var(--theme-primary) 18%, transparent)',
-          }}
-        >
-          <p
-            className="text-[10px] font-semibold tracking-widest uppercase mb-1"
-            style={{ color: 'color-mix(in srgb, var(--theme-accent) 45%, transparent)' }}
-          >
-            Color Palette
-          </p>
-          <p
-            className="text-[10px] mb-2 leading-snug"
-            style={{ color: 'color-mix(in srgb, var(--theme-accent) 45%, transparent)' }}
-          >
-            Used by the palette icon on each section to set its background, title, and text color.
-          </p>
-          {(
-            [
-              { label: 'Color 1', key: 'primaryColor', value: theme.primaryColor },
-              { label: 'Color 2', key: 'secondaryColor', value: theme.secondaryColor },
-              { label: 'Color 3', key: 'accentColor', value: theme.accentColor },
-            ] as const
-          ).map(({ label, key, value }) => (
-            <div key={key} className="flex items-center gap-3 mb-2">
-              <div className="relative flex-shrink-0">
-                <ColorSwatchInput value={value} onCommit={(v) => updateTheme({ [key]: v })} />
-              </div>
-              <span
-                className="text-xs font-medium"
-                style={{ color: 'color-mix(in srgb, var(--theme-accent) 70%, transparent)' }}
-              >
-                {label}
-              </span>
-              <span
-                className="ml-auto text-[10px] font-mono"
-                style={{ color: 'color-mix(in srgb, var(--theme-accent) 40%, transparent)' }}
-              >
-                {value}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Admin footer: image library + logout ── */}
-      {isAdmin && (
-        <div
-          className="px-1.5 py-1.5"
-          style={{
-            borderTop: '1px solid color-mix(in srgb, var(--theme-primary) 18%, transparent)',
-            flexShrink: 0,
-          }}
-        >
-          {editMode && (
-            <Button
-              onClick={() => setManageSectionsOpen(true)}
-              fullWidth
-              className="sidebar-item-hover"
-              startIcon={<ViewQuiltIcon sx={{ fontSize: 16, opacity: 0.6 }} />}
-              sx={{ justifyContent: 'flex-start', color: 'var(--theme-accent)', fontWeight: 500, fontSize: 14 }}
-            >
-              Manage Sections
-            </Button>
-          )}
-          <Button
-            onClick={() => setImageLibraryOpen(true)}
-            fullWidth
-            className="sidebar-item-hover"
-            startIcon={<PhotoLibraryIcon sx={{ fontSize: 16, opacity: 0.6 }} />}
-            sx={{ justifyContent: 'flex-start', color: 'var(--theme-accent)', fontWeight: 500, fontSize: 14 }}
-          >
-            Image Library
-          </Button>
-          <Button
-            onClick={() => signOut({ callbackUrl: '/' })}
-            fullWidth
-            className="sidebar-item-hover"
-            startIcon={<LogoutIcon sx={{ fontSize: 16, opacity: 0.6 }} />}
-            sx={{ justifyContent: 'flex-start', color: 'var(--theme-accent)', fontWeight: 500, fontSize: 14 }}
-          >
-            Sign Out
-          </Button>
-        </div>
-      )}
-
-      {/* ── Image picker (manage mode) ── */}
-      {isAdmin && (
-        <ImagePicker
-          open={imageLibraryOpen}
-          onClose={() => setImageLibraryOpen(false)}
-          onSelect={() => setImageLibraryOpen(false)}
-          mode="manage"
-        />
-      )}
-
-      {/* ── Manage Sections (add / duplicate / remove / reorder) ── */}
-      {isAdmin && editMode && (
-        <ManageSectionsDialog
-          open={manageSectionsOpen}
-          onClose={() => setManageSectionsOpen(false)}
-          sections={sections}
-        />
-      )}
-
-      {/* ── Toast ── */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      >
-        <Alert
-          severity={snackbar.severity}
-          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </>
   );
 }
 
 // ─── Main Sidebar export ───────────────────────────────────────────────────────
 export default function Sidebar({ config, adminName }: SidebarProps) {
-  const { isAdmin } = useAdmin();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Width comes from the --sidebar-width CSS var (set once in globals.css as a
