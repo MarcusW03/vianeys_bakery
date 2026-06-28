@@ -1,32 +1,42 @@
 'use client';
 
 import Image from 'next/image';
-import { useAdmin } from '@/lib/admin-context';
+import Button from '@mui/material/Button';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 import EditableText from '@/components/admin/EditableText';
 import EditableImage from '@/components/admin/EditableImage';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
-import type { HeroContent, SectionStyle } from '@/lib/config/types';
-import { resolveStyleColor, DEFAULT_SECTION_STYLE } from '@/lib/config/section-background';
+import type { HeroContent } from '@/lib/config/types';
+import { resolveStyleColor, resolveStyleRadius, resolveBackgroundLayer } from '@/lib/config/section-background';
+import { getInstanceLabel, getSectionAnchorId } from '@/lib/sections/registry';
+import type { SectionRendererProps } from '@/lib/sections/registry';
 
 export default function HeroSection({
-  data,
-  sectionStyle,
-}: {
-  data: HeroContent;
-  sectionStyle?: SectionStyle;
-}) {
-  const { editMode, updateHero } = useAdmin();
-  const style = sectionStyle ?? DEFAULT_SECTION_STYLE;
+  instance,
+  editMode,
+  onContentChange,
+  allSections,
+}: SectionRendererProps<HeroContent>) {
+  const data = instance.content;
+  const style = instance.style;
   const headingColor = resolveStyleColor(style.heading, '#ffffff');
   const textColor = resolveStyleColor(style.text, 'var(--theme-secondary)');
 
+  const targetOptions = allSections.filter((s) => s.id !== instance.id);
+  const targetInstance = allSections.find((s) => s.id === data.ctaTargetId);
+  const ctaHref = targetInstance ? `#${getSectionAnchorId(targetInstance, allSections)}` : undefined;
+
   return (
     <section
-      id="hero"
-      className={`relative w-full min-h-[70vh] flex items-center justify-center overflow-hidden ${editMode ? 'edit-mode-section-outline' : ''}`}
-      style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-accent)') }}
+      id={getSectionAnchorId(instance, allSections)}
+      className={`relative w-full min-h-[70vh] flex items-center justify-center overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
+      style={{
+        ...resolveBackgroundLayer(style, 'var(--theme-accent)'),
+        borderRadius: resolveStyleRadius(style.borderRadius, 'var(--radius-md)'),
+      }}
     >
-      {editMode && <SectionStyleEditor sectionId="hero" style={style} />}
+      {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
       {/* Background image or gradient */}
       {data.imageUrl ? (
         <Image
@@ -54,7 +64,7 @@ export default function HeroSection({
             <EditableImage
               src={data.imageUrl || ''}
               alt="Hero background"
-              onImageChange={(url) => updateHero({ imageUrl: url })}
+              onImageChange={(url) => onContentChange({ imageUrl: url })}
               width={300}
               height={180}
               className="w-full h-full object-cover rounded-lg border-2 border-white/60"
@@ -68,10 +78,10 @@ export default function HeroSection({
 
       {/* Content */}
       <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
-        <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight" style={{ color: headingColor }}>
+        <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight tracking-tighter" style={{ color: headingColor }}>
           <EditableText
             value={data.headline}
-            onChange={(val) => updateHero({ headline: val })}
+            onChange={(val) => onContentChange({ headline: val })}
             variant="dark"
           />
         </h1>
@@ -79,27 +89,65 @@ export default function HeroSection({
         <p className="text-xl md:text-2xl mb-8" style={{ color: textColor }}>
           <EditableText
             value={data.subtext}
-            onChange={(val) => updateHero({ subtext: val })}
+            onChange={(val) => onContentChange({ subtext: val })}
             multiline
             variant="dark"
           />
         </p>
 
-        <a
-          href="#how-to-order"
+        <Button
+          href={ctaHref}
           onClick={(e) => {
             if (editMode) e.preventDefault();
           }}
-          className="inline-block font-semibold px-8 py-4 rounded-full transition-colors duration-200 text-lg text-white hover:opacity-90"
-          style={{ backgroundColor: 'var(--theme-primary)' }}
+          variant="contained"
+          size="large"
+          sx={{
+            borderRadius: 'var(--radius-md)',
+            px: 4,
+            py: 2,
+            fontSize: 18,
+            fontWeight: 600,
+            textTransform: 'none',
+            bgcolor: 'var(--theme-primary)',
+            '&:hover': { bgcolor: 'var(--theme-primary)', opacity: 0.9 },
+          }}
         >
           <EditableText
             value={data.ctaText}
-            onChange={(val) => updateHero({ ctaText: val })}
+            onChange={(val) => onContentChange({ ctaText: val })}
             variant="dark"
             className="text-white"
           />
-        </a>
+        </Button>
+
+        {editMode && (
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <span className="text-xs" style={{ color: textColor }}>
+              Links to:
+            </span>
+            <Select
+              size="small"
+              value={data.ctaTargetId}
+              onChange={(e) => onContentChange({ ctaTargetId: e.target.value })}
+              displayEmpty
+              sx={{
+                fontSize: 13,
+                bgcolor: 'rgba(255,255,255,0.9)',
+                minWidth: 160,
+              }}
+            >
+              <MenuItem value="">
+                <em>None</em>
+              </MenuItem>
+              {targetOptions.map((s) => (
+                <MenuItem key={s.id} value={s.id}>
+                  {getInstanceLabel(s, allSections)}
+                </MenuItem>
+              ))}
+            </Select>
+          </div>
+        )}
       </div>
     </section>
   );

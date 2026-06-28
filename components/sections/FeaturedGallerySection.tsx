@@ -1,22 +1,24 @@
 'use client';
 
 import Image from 'next/image';
-import { useAdmin } from '@/lib/admin-context';
 import EditableText from '@/components/admin/EditableText';
 import EditableImage from '@/components/admin/EditableImage';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
-import { resolveStyleColor, DEFAULT_SECTION_STYLE } from '@/lib/config/section-background';
-import type { SectionStyle } from '@/lib/config/types';
+import AddTileCard from '@/components/sections/shared/AddTileCard';
+import RemoveIconButton from '@/components/sections/shared/RemoveIconButton';
+import { resolveStyleColor, resolveStyleRadius, resolveBackgroundLayer } from '@/lib/config/section-background';
+import type { FeaturedGalleryContent } from '@/lib/config/types';
+import { getSectionAnchorId } from '@/lib/sections/registry';
+import type { SectionRendererProps } from '@/lib/sections/registry';
 
-interface FeaturedGalleryProps {
-  imageUrls: string[];
-  sectionTitle: string;
-  sectionStyle?: SectionStyle;
-}
-
-export default function FeaturedGallery({ imageUrls, sectionTitle, sectionStyle }: FeaturedGalleryProps) {
-  const { editMode, updateFeaturedImages, updateSectionTitles } = useAdmin();
-  const style = sectionStyle ?? DEFAULT_SECTION_STYLE;
+export default function FeaturedGallerySection({
+  instance,
+  editMode,
+  onContentChange,
+  allSections,
+}: SectionRendererProps<FeaturedGalleryContent>) {
+  const { imageUrls, sectionTitle } = instance.content;
+  const style = instance.style;
   const headingColor = resolveStyleColor(style.heading, 'var(--theme-accent)');
 
   const nonEmpty = imageUrls.filter((u) => u);
@@ -24,31 +26,34 @@ export default function FeaturedGallery({ imageUrls, sectionTitle, sectionStyle 
   const handleChange = (index: number, url: string) => {
     const updated = [...imageUrls];
     updated[index] = url;
-    updateFeaturedImages(updated);
+    onContentChange({ imageUrls: updated });
   };
 
-  const handleAdd = () => updateFeaturedImages([...imageUrls, '']);
+  const handleAdd = () => onContentChange({ imageUrls: [...imageUrls, ''] });
 
   const handleRemove = (index: number) =>
-    updateFeaturedImages(imageUrls.filter((_, i) => i !== index));
+    onContentChange({ imageUrls: imageUrls.filter((_, i) => i !== index) });
 
   if (!editMode && nonEmpty.length === 0) return null;
 
   return (
     <section
-      id="featured"
-      className={`py-20 px-6 ${editMode ? 'edit-mode-section-outline' : ''}`}
-      style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-secondary)') }}
+      id={getSectionAnchorId(instance, allSections)}
+      className={`py-20 px-6 overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
+      style={{
+        ...resolveBackgroundLayer(style, 'var(--theme-secondary)'),
+        borderRadius: resolveStyleRadius(style.borderRadius, 'var(--radius-md)'),
+      }}
     >
-      {editMode && <SectionStyleEditor sectionId="featured" style={style} />}
+      {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
       <div className="max-w-6xl mx-auto">
         <h2
-          className="text-3xl font-bold text-center mb-10"
+          className="text-3xl font-bold text-center mb-10 tracking-tight"
           style={{ color: headingColor }}
         >
           <EditableText
             value={sectionTitle}
-            onChange={(val) => updateSectionTitles({ featured: val })}
+            onChange={(val) => onContentChange({ sectionTitle: val })}
           />
         </h2>
 
@@ -68,24 +73,15 @@ export default function FeaturedGallery({ imageUrls, sectionTitle, sectionStyle 
                   height={300}
                   className="w-full h-full object-cover"
                 />
-                <button
-                  onClick={() => handleRemove(i)}
-                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs font-bold z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                >
-                  ×
-                </button>
+                <RemoveIconButton onClick={() => handleRemove(i)} size={24} ariaLabel="Remove image" />
               </div>
             ))}
-            <button
+            <AddTileCard
               onClick={handleAdd}
-              className="w-48 h-48 rounded-[var(--radius-md)] border-2 border-dashed flex items-center justify-center text-4xl hover:opacity-80 transition-opacity flex-shrink-0"
-              style={{
-                borderColor: 'var(--theme-primary)',
-                color: 'var(--theme-primary)',
-              }}
-            >
-              +
-            </button>
+              ariaLabel="Add image"
+              iconSize={36}
+              sx={{ width: 192, height: 192, flexShrink: 0 }}
+            />
           </div>
         ) : (
           // ── Customer view ──────────────────────────────────────────────────

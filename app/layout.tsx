@@ -17,10 +17,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Viáney's Bakery",
-  description: "Custom cakes and pastries for every occasion, made with love.",
-};
+// siteName is admin-editable (Sidebar header), so the tab title has to be
+// read at request time via generateMetadata() rather than a static export —
+// getConfig() is request-deduped (React cache()), so this doesn't add a
+// second read beyond the one RootLayout already does below.
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await getConfig();
+  return {
+    title: config.siteName,
+    description: "Custom cakes and pastries for every occasion, made with love.",
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -43,6 +50,11 @@ export default async function RootLayout({
         ['--theme-primary' as string]: theme.primaryColor,
         ['--theme-secondary' as string]: theme.secondaryColor,
         ['--theme-accent' as string]: theme.accentColor,
+        // Only override the default fluid clamp() when the admin has
+        // explicitly resized the sidebar (see Sidebar.tsx's resize handle).
+        ...(config.sidebarWidthPx
+          ? { ['--sidebar-width' as string]: `${config.sidebarWidthPx}px` }
+          : {}),
       }}
     >
       <body className="min-h-full flex flex-col">

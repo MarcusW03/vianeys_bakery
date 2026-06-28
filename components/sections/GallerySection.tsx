@@ -13,32 +13,28 @@ import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
-import { useAdmin } from '@/lib/admin-context';
 import EditableImage from '@/components/admin/EditableImage';
 import EditableText from '@/components/admin/EditableText';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
-import { resolveStyleColor, DEFAULT_SECTION_STYLE } from '@/lib/config/section-background';
-import type { GalleryCategory, GalleryImage, SectionStyle } from '@/lib/config/types';
-
-interface GallerySectionProps {
-  categories: GalleryCategory[];
-  sectionTitle: string;
-  sectionStyle?: SectionStyle;
-}
+import AddTileCard from '@/components/sections/shared/AddTileCard';
+import RemoveIconButton from '@/components/sections/shared/RemoveIconButton';
+import { resolveStyleColor, resolveStyleRadius, resolveBackgroundLayer } from '@/lib/config/section-background';
+import type { GalleryCategory, GalleryImage, GalleryContent } from '@/lib/config/types';
+import { getSectionAnchorId } from '@/lib/sections/registry';
+import type { SectionRendererProps } from '@/lib/sections/registry';
 
 // Cell size in px — shared between desktop and mobile so math is consistent
 const CELL = 200;
 
-export default function GallerySection({ categories, sectionTitle, sectionStyle }: GallerySectionProps) {
-  const style = sectionStyle ?? DEFAULT_SECTION_STYLE;
+export default function GallerySection({
+  instance,
+  editMode,
+  onContentChange,
+  allSections,
+}: SectionRendererProps<GalleryContent>) {
+  const { categories, sectionTitle } = instance.content;
+  const style = instance.style;
   const headingColor = resolveStyleColor(style.heading, 'var(--theme-accent)');
-  const {
-    editMode,
-    updateGalleryCategory,
-    updateSectionTitles,
-    addGalleryCategory,
-    removeGalleryCategory,
-  } = useAdmin();
 
   const [activeTab, setActiveTab] = useState<string>('all');
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -47,6 +43,24 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
   const [galleryRows, setGalleryRows] = useState(2);
   const [containerWidth, setContainerWidth] = useState(0);
   const gridContainerRef = useRef<HTMLDivElement>(null);
+
+  const updateCategory = (categoryId: string, patch: Partial<GalleryCategory>) => {
+    onContentChange({
+      categories: categories.map((c) => (c.id === categoryId ? { ...c, ...patch } : c)),
+    });
+  };
+
+  const addCategory = () => {
+    const newCat: GalleryCategory = { id: `cat-${Date.now()}`, name: 'New Category', images: [] };
+    onContentChange({ categories: [...categories, newCat] });
+    // Land the admin directly on the new category instead of leaving them on
+    // whichever tab was active — that's also where the name becomes editable.
+    setActiveTab(newCat.id);
+  };
+
+  const removeCategory = (id: string) => {
+    onContentChange({ categories: categories.filter((c) => c.id !== id) });
+  };
 
   // Responsive row count for the customer-view grid: 1 row on mobile, 2 on
   // tablet, 3 on desktop. Recomputed on resize, not just on mount.
@@ -85,11 +99,20 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
     setLightboxOpen(false);
   }, [activeTab]);
 
+  // Clamp defensively at render time rather than relying solely on the
+  // effect below — discarding edits (or a category disappearing any other
+  // way) changes `categories` synchronously, but effects run a tick later,
+  // so passing the raw (possibly now-stale) `activeTab` straight to <Tabs>
+  // briefly hands it a value none of its children have, which MUI flags as
+  // an invalid-prop console error for that one frame.
+  const safeActiveTab =
+    activeTab === 'all' || categories.some((c) => c.id === activeTab) ? activeTab : 'all';
+
   const allImages = categories.flatMap((c) => c.images.filter((img) => img.url));
   const activeCategory =
-    activeTab === 'all' ? null : categories.find((c) => c.id === activeTab);
+    safeActiveTab === 'all' ? null : categories.find((c) => c.id === safeActiveTab);
   const currentImages =
-    activeTab === 'all'
+    safeActiveTab === 'all'
       ? allImages
       : (activeCategory?.images.filter((img) => img.url) ?? []);
   const slides = currentImages.map((img) => ({ src: img.url, alt: img.alt }));
@@ -101,7 +124,7 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
     const updated: GalleryImage[] = activeCategory.images.map((img, i) =>
       i === imgIndex ? { ...img, url } : img,
     );
-    updateGalleryCategory(activeCategory.id, { images: updated });
+    updateCategory(activeCategory.id, { images: updated });
   };
 
   const handleAddImage = () => {
@@ -110,16 +133,15 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
       id: `img-${Date.now()}`,
       url: '',
       alt: '',
-      featured: false,
     };
-    updateGalleryCategory(activeCategory.id, {
+    updateCategory(activeCategory.id, {
       images: [...activeCategory.images, newImg],
     });
   };
 
   const handleRemoveImage = (imgIndex: number) => {
     if (!activeCategory) return;
-    updateGalleryCategory(activeCategory.id, {
+    updateCategory(activeCategory.id, {
       images: activeCategory.images.filter((_, i) => i !== imgIndex),
     });
   };
@@ -128,31 +150,34 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
     if (cat.images.length > 0) {
       setDeleteConfirm(cat);
     } else {
-      removeGalleryCategory(cat.id);
+      removeCategory(cat.id);
     }
   };
 
   // Images shown in the scroll grid (edit mode shows including empties)
   const gridImages =
-    editMode && activeTab !== 'all'
+    editMode && safeActiveTab !== 'all'
       ? (activeCategory?.images ?? [])
       : currentImages;
 
   return (
     <section
-      id="gallery"
-      className={`py-20 px-6 ${editMode ? 'edit-mode-section-outline' : ''}`}
-      style={{ backgroundColor: resolveStyleColor(style.background, '#ffffff') }}
+      id={getSectionAnchorId(instance, allSections)}
+      className={`py-20 px-6 overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
+      style={{
+        ...resolveBackgroundLayer(style, '#ffffff'),
+        borderRadius: resolveStyleRadius(style.borderRadius, 'var(--radius-md)'),
+      }}
     >
-      {editMode && <SectionStyleEditor sectionId="gallery" style={style} />}
+      {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
       <div className="max-w-6xl mx-auto">
         <h2
-          className="text-3xl font-bold text-center mb-8"
+          className="text-3xl font-bold text-center mb-8 tracking-tight"
           style={{ color: headingColor }}
         >
           <EditableText
             value={sectionTitle}
-            onChange={(val) => updateSectionTitles({ gallery: val })}
+            onChange={(val) => onContentChange({ sectionTitle: val })}
           />
         </h2>
 
@@ -168,7 +193,7 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
           }}
         >
           <Tabs
-            value={activeTab}
+            value={safeActiveTab}
             onChange={(_, v: string) => setActiveTab(v)}
             textColor="primary"
             indicatorColor="primary"
@@ -183,16 +208,16 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
 
           {editMode && (
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button size="small" variant="outlined" onClick={addGalleryCategory}>
+              <Button size="small" variant="outlined" onClick={addCategory}>
                 + Category
               </Button>
-              {activeTab !== 'all' && (
+              {safeActiveTab !== 'all' && (
                 <Button
                   size="small"
                   variant="outlined"
                   color="error"
                   onClick={() => {
-                    const cat = categories.find((c) => c.id === activeTab);
+                    const cat = categories.find((c) => c.id === safeActiveTab);
                     if (cat) handleDeleteCategory(cat);
                   }}
                 >
@@ -202,6 +227,23 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
             </Box>
           )}
         </Box>
+
+        {/* Category name — editable separately from the Tab itself, since a
+            Tab's own label isn't a safe place to host a click-to-edit field
+            without it fighting the Tab's own click-to-select behavior. */}
+        {editMode && activeCategory && (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 3 }}>
+            <Typography variant="caption" color="text.secondary">
+              Category name:
+            </Typography>
+            <span style={{ fontWeight: 600, color: headingColor }}>
+              <EditableText
+                value={activeCategory.name}
+                onChange={(val) => updateCategory(activeCategory.id, { name: val })}
+              />
+            </span>
+          </Box>
+        )}
 
         {/* ── Image grid ── */}
         {/*
@@ -220,7 +262,7 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
                 className="relative rounded-[var(--radius-md)] overflow-hidden group flex-shrink-0"
                 style={{ width: CELL, height: CELL }}
               >
-                {activeTab !== 'all' ? (
+                {safeActiveTab !== 'all' ? (
                   <>
                     <EditableImage
                       src={img.url}
@@ -230,12 +272,14 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
                       height={CELL}
                       className="w-full h-full object-cover"
                     />
-                    <button
+                    <RemoveIconButton
                       onClick={() => handleRemoveImage(i)}
-                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center z-10 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      ×
-                    </button>
+                      size={20}
+                      iconSize={12}
+                      top={4}
+                      right={4}
+                      ariaLabel="Remove image"
+                    />
                   </>
                 ) : img.url ? (
                   <div className="relative w-full h-full">
@@ -251,19 +295,13 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
               </div>
             ))}
 
-            {editMode && activeTab !== 'all' && (
-              <button
+            {editMode && safeActiveTab !== 'all' && (
+              <AddTileCard
                 onClick={handleAddImage}
-                className="rounded-[var(--radius-md)] border-2 border-dashed flex items-center justify-center text-3xl hover:opacity-70 transition-opacity flex-shrink-0"
-                style={{
-                  width: CELL,
-                  height: CELL,
-                  borderColor: 'var(--theme-primary)',
-                  color: 'var(--theme-primary)',
-                }}
-              >
-                +
-              </button>
+                ariaLabel="Add image"
+                iconSize={28}
+                sx={{ width: CELL, height: CELL, flexShrink: 0 }}
+              />
             )}
           </div>
         ) : (
@@ -398,7 +436,7 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
             variant="contained"
             color="error"
             onClick={() => {
-              if (deleteConfirm) removeGalleryCategory(deleteConfirm.id);
+              if (deleteConfirm) removeCategory(deleteConfirm.id);
               setDeleteConfirm(null);
             }}
           >

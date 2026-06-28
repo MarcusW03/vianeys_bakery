@@ -8,26 +8,25 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import { useAdmin } from '@/lib/admin-context';
 import EditableText from '@/components/admin/EditableText';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
-import type { ContactContent, ContactLink, SectionStyle } from '@/lib/config/types';
-import { resolveStyleColor, DEFAULT_SECTION_STYLE } from '@/lib/config/section-background';
+import type { ContactLink, ContactSectionContent } from '@/lib/config/types';
+import { resolveStyleColor, resolveStyleRadius, resolveBackgroundLayer } from '@/lib/config/section-background';
+import { getSectionAnchorId } from '@/lib/sections/registry';
+import type { SectionRendererProps } from '@/lib/sections/registry';
 
-interface ContactSectionProps {
-  data: ContactContent;
-  sectionTitle: string;
-  sectionStyle?: SectionStyle;
-}
-
-export default function ContactSection({ data, sectionTitle, sectionStyle }: ContactSectionProps) {
-  const { editMode, updateContact, updateSectionTitles } = useAdmin();
-  const style = sectionStyle ?? DEFAULT_SECTION_STYLE;
+export default function ContactSection({
+  instance,
+  editMode,
+  onContentChange,
+  allSections,
+}: SectionRendererProps<ContactSectionContent>) {
+  const { links, sectionTitle } = instance.content;
+  const style = instance.style;
   const headingColor = resolveStyleColor(style.heading, 'var(--theme-accent)');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<ContactLink | null>(null);
@@ -51,32 +50,35 @@ export default function ContactSection({ data, sectionTitle, sectionStyle }: Con
   const handleSaveLink = () => {
     if (!editLabel || !editUrl) return;
     const updatedLinks = editingLink
-      ? data.links.map((l) =>
+      ? links.map((l) =>
           l.id === editingLink.id ? { ...l, label: editLabel, url: editUrl } : l,
         )
-      : [...data.links, { id: `link-${Date.now()}`, label: editLabel, url: editUrl }];
-    updateContact({ links: updatedLinks });
+      : [...links, { id: `link-${Date.now()}`, label: editLabel, url: editUrl }];
+    onContentChange({ links: updatedLinks });
     setDialogOpen(false);
   };
 
   const handleDeleteLink = (id: string) => {
-    updateContact({ links: data.links.filter((l) => l.id !== id) });
+    onContentChange({ links: links.filter((l) => l.id !== id) });
   };
 
-  const validLinks = data.links.filter((l) => l.url);
+  const validLinks = links.filter((l) => l.url);
 
   return (
     <section
-      id="contact"
-      className={`py-20 px-6 ${editMode ? 'edit-mode-section-outline' : ''}`}
-      style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-secondary)') }}
+      id={getSectionAnchorId(instance, allSections)}
+      className={`py-20 px-6 overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
+      style={{
+        ...resolveBackgroundLayer(style, 'var(--theme-secondary)'),
+        borderRadius: resolveStyleRadius(style.borderRadius, 'var(--radius-md)'),
+      }}
     >
-      {editMode && <SectionStyleEditor sectionId="contact" style={style} />}
+      {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-12" style={{ color: headingColor }}>
+        <h2 className="text-3xl font-bold text-center mb-12 tracking-tight" style={{ color: headingColor }}>
           <EditableText
             value={sectionTitle}
-            onChange={(val) => updateSectionTitles({ contact: val })}
+            onChange={(val) => onContentChange({ sectionTitle: val })}
             variant="light"
           />
         </h2>
@@ -84,7 +86,7 @@ export default function ContactSection({ data, sectionTitle, sectionStyle }: Con
         <div className="flex flex-wrap justify-center gap-4">
           {editMode ? (
             <>
-              {data.links.map((link) => (
+              {links.map((link) => (
                 <Box
                   key={link.id}
                   sx={{
@@ -132,7 +134,7 @@ export default function ContactSection({ data, sectionTitle, sectionStyle }: Con
             </>
           ) : (
             validLinks.map((link) => (
-              <a
+              <Button
                 key={link.id}
                 href={link.url}
                 target={
@@ -141,11 +143,19 @@ export default function ContactSection({ data, sectionTitle, sectionStyle }: Con
                     : '_blank'
                 }
                 rel="noopener noreferrer"
-                className="px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200 hover:opacity-85 hover:shadow-md active:scale-[0.97]"
-                style={{ backgroundColor: 'var(--theme-primary)' }}
+                variant="contained"
+                sx={{
+                  borderRadius: 3,
+                  px: 3,
+                  py: 1.5,
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  bgcolor: 'var(--theme-primary)',
+                  '&:hover': { bgcolor: 'var(--theme-primary)', opacity: 0.85 },
+                }}
               >
                 {link.label}
-              </a>
+              </Button>
             ))
           )}
         </div>

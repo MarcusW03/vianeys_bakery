@@ -2,7 +2,6 @@ export interface GalleryImage {
   id: string;
   url: string;
   alt: string;
-  featured: boolean;
 }
 
 export interface GalleryCategory {
@@ -11,14 +10,14 @@ export interface GalleryCategory {
   images: GalleryImage[];
 }
 
-export interface PricingItem {
+export interface CardGridItem {
   id: string;
-  name: string;
+  title: string;
   description: string;
-  priceRange: string;
+  badgeText: string;
 }
 
-export interface OrderStep {
+export interface NumberedListItem {
   id: string;
   stepNumber: number;
   title: string;
@@ -30,9 +29,32 @@ export interface HeroContent {
   subtext: string;
   ctaText: string;
   imageUrl: string;
+  /** Instance id (SectionInstance.id) of the section the CTA button scrolls
+   * to — not a type or hardcoded anchor, since sections are dynamic instances. */
+  ctaTargetId: string;
 }
 
-export interface AboutContent {
+export interface FeaturedGalleryContent {
+  imageUrls: string[];
+  sectionTitle: string;
+}
+
+export interface GalleryContent {
+  categories: GalleryCategory[];
+  sectionTitle: string;
+}
+
+export interface CardGridContent {
+  headline: string;
+  items: CardGridItem[];
+}
+
+export interface NumberedListContent {
+  headline: string;
+  steps: NumberedListItem[];
+}
+
+export interface ImageWithTextContent {
   headline: string;
   body: string;
   imageUrl: string;
@@ -44,9 +66,10 @@ export interface ContactLink {
   url: string;
 }
 
-export interface ContactContent {
+export interface ContactSectionContent {
   links: ContactLink[];
   location: string;
+  sectionTitle: string;
 }
 
 export interface SiteTheme {
@@ -59,40 +82,37 @@ export interface SiteTheme {
 // primaryColor/secondaryColor/accentColor); any other string is a literal hex
 // the admin picked with the custom color picker for that one spot.
 export type ColorSlot = 'color1' | 'color2' | 'color3';
+// "radius-sm/md/lg" reference the site's --radius-* scale; any other string is
+// a literal CSS value (e.g. "8px") the admin picked as a custom radius.
+export type RadiusSlot = 'radius-sm' | 'radius-md' | 'radius-lg';
 export interface SectionStyle {
   background: ColorSlot | string;
   heading: ColorSlot | string;
   text: ColorSlot | string;
+  borderRadius?: RadiusSlot | string;
+  /** When set, layers over (and visually replaces) `background` as the
+   * section's backdrop — the color still applies underneath/around it. */
+  backgroundImageUrl?: string;
 }
-export type SectionStyles = Record<string, SectionStyle>;
+
+// One entry per section INSTANCE on the page. `id` is stable and independent
+// of `type` — two Gallery instances are two different ids of type 'gallery'.
+// `type` looks up the SectionDefinition in lib/sections/registry.ts.
+export interface SectionInstance<TContent = unknown> {
+  id: string;
+  type: string;
+  content: TContent;
+  style: SectionStyle;
+  hidden?: boolean;
+}
 
 export interface SiteConfig {
   siteName: string;
-  hero: HeroContent;
-  featuredImageUrls: string[];
-  gallery: {
-    categories: GalleryCategory[];
-  };
-  pricing: {
-    headline: string;
-    items: PricingItem[];
-  };
-  howToOrder: {
-    headline: string;
-    steps: OrderStep[];
-  };
-  about: AboutContent;
-  contact: ContactContent;
-  sectionTitles: {
-    featured: string;
-    gallery: string;
-    contact: string;
-  };
   theme: SiteTheme;
-  sectionStyles?: SectionStyles;
-  sectionOrder?: string[];
-  hiddenSections?: string[];
+  /** Admin-resized Sidebar width in px, set by dragging its edit-mode resize
+   * handle. Unset keeps the default fluid clamp() — once set, it's a fixed
+   * value the admin explicitly chose, not expected to stay responsive. */
+  sidebarWidthPx?: number;
+  sections: SectionInstance[];
   lastUpdated: string;
 }
-
-export const SECTION_IDS = ['hero', 'featured', 'gallery', 'pricing', 'how-to-order', 'about', 'contact'] as const;

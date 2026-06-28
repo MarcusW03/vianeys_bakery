@@ -1,4 +1,10 @@
-import type { SiteConfig } from './types';
+import type {
+  SiteConfig,
+  HeroContent,
+  ImageWithTextContent,
+  FeaturedGalleryContent,
+  GalleryContent,
+} from './types';
 
 /**
  * Strips every reference to `url` from a config (featured images, gallery
@@ -10,14 +16,38 @@ import type { SiteConfig } from './types';
 export function removeImageUrlFromConfig(config: SiteConfig, url: string): SiteConfig {
   return {
     ...config,
-    featuredImageUrls: config.featuredImageUrls.filter((u) => u !== url),
-    gallery: {
-      categories: config.gallery.categories.map((cat) => ({
-        ...cat,
-        images: cat.images.filter((img) => img.url !== url),
-      })),
-    },
-    hero: config.hero.imageUrl === url ? { ...config.hero, imageUrl: '' } : config.hero,
-    about: config.about.imageUrl === url ? { ...config.about, imageUrl: '' } : config.about,
+    sections: config.sections.map((instance) => {
+      switch (instance.type) {
+        case 'hero':
+        case 'image-with-text': {
+          const content = instance.content as HeroContent | ImageWithTextContent;
+          return content.imageUrl === url
+            ? { ...instance, content: { ...content, imageUrl: '' } }
+            : instance;
+        }
+        case 'featured-gallery': {
+          const content = instance.content as FeaturedGalleryContent;
+          return {
+            ...instance,
+            content: { ...content, imageUrls: content.imageUrls.filter((u) => u !== url) },
+          };
+        }
+        case 'gallery': {
+          const content = instance.content as GalleryContent;
+          return {
+            ...instance,
+            content: {
+              ...content,
+              categories: content.categories.map((cat) => ({
+                ...cat,
+                images: cat.images.filter((img) => img.url !== url),
+              })),
+            },
+          };
+        }
+        default:
+          return instance;
+      }
+    }),
   };
 }

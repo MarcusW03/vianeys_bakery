@@ -20,6 +20,10 @@ export default async function AdminPage() {
     ? new Date(config.lastUpdated).toLocaleString()
     : 'Never';
 
+  const galleryCategoryCount = config.sections
+    .filter((s) => s.type === 'gallery')
+    .reduce((sum, s) => sum + (s.content as { categories: unknown[] }).categories.length, 0);
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: 4 }}>
       <Box sx={{ maxWidth: 900, mx: 'auto' }}>
@@ -59,7 +63,7 @@ export default async function AdminPage() {
                   Gallery Categories
                 </Typography>
                 <Typography variant="h3" color="primary" sx={{ fontWeight: 700 }}>
-                  {config.gallery.categories.length}
+                  {galleryCategoryCount}
                 </Typography>
               </CardContent>
             </Card>

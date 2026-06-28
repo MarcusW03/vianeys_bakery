@@ -6,85 +6,13 @@ import { defaultConfig } from './defaults';
 
 const LOCAL_CONFIG_PATH = path.join(process.cwd(), 'data', 'config.json');
 
-/** Migrates old contact format to new links format */
-function migrateContactFormat(contact: any): any {
-  if (!contact) return { ...defaultConfig.contact };
-  
-  // If already in new format with links array, use as-is
-  if (Array.isArray(contact.links)) {
-    return contact;
-  }
-
-  // Old format with separate fields: phone, email, instagram, facebook, messenger
-  const links = [];
-  const fieldMap: Record<string, string> = {
-    phone: 'Call us',
-    email: 'Email',
-    instagram: 'Instagram',
-    facebook: 'Facebook',
-    messenger: 'Messenger',
-  };
-
-  for (const [key, label] of Object.entries(fieldMap)) {
-    const value = contact[key];
-    if (value) {
-      let url = value;
-      if (key === 'phone' && !value.startsWith('tel:')) {
-        url = `tel:${value}`;
-      } else if (key === 'email' && !value.startsWith('mailto:')) {
-        url = `mailto:${value}`;
-      } else if (key === 'instagram') {
-        url = value.startsWith('http') ? value : `https://instagram.com/${value.replace(/^@/, '')}`;
-      } else if (key === 'facebook') {
-        url = value.startsWith('http') ? value : `https://facebook.com/${value.replace(/^@/, '')}`;
-      } else if (key === 'messenger') {
-        url = value.startsWith('http') ? value : `https://m.me/${value.replace(/^@/, '')}`;
-      }
-      links.push({ id: key, label, url });
-    }
-  }
-
-  return {
-    links: links.length > 0 ? links : defaultConfig.contact.links,
-    location: contact.location || '',
-  };
-}
-
-const OLD_TOKEN_TO_SLOT: Record<string, string> = {
-  primary: 'color1',
-  secondary: 'color2',
-  accent: 'color3',
-  white: '#ffffff',
-};
-
-/** Migrates the old `sectionStyles: Record<id, 'primary'|'secondary'|'accent'|'white'>`
- * shape to the current `Record<id, { background, heading, text }>` shape. */
-function migrateSectionStyles(raw: any): SiteConfig['sectionStyles'] {
-  if (!raw) return defaultConfig.sectionStyles;
-  const migrated: Record<string, any> = {};
-  for (const [sectionId, value] of Object.entries(raw)) {
-    if (typeof value === 'string') {
-      const bg = OLD_TOKEN_TO_SLOT[value] ?? value;
-      const fallback = defaultConfig.sectionStyles?.[sectionId];
-      migrated[sectionId] = { ...fallback, background: bg };
-    } else {
-      migrated[sectionId] = value;
-    }
-  }
-  return { ...defaultConfig.sectionStyles, ...migrated };
-}
-
 /** Merges parsed JSON with defaults so new fields are always present in old configs */
 function mergeWithDefaults(parsed: Partial<SiteConfig>): SiteConfig {
   return {
     ...defaultConfig,
     ...parsed,
-    contact: migrateContactFormat(parsed.contact),
-    sectionTitles: { ...defaultConfig.sectionTitles, ...parsed.sectionTitles },
     theme: { ...defaultConfig.theme, ...parsed.theme },
-    sectionStyles: migrateSectionStyles(parsed.sectionStyles),
-    sectionOrder: parsed.sectionOrder || defaultConfig.sectionOrder,
-    hiddenSections: parsed.hiddenSections || defaultConfig.hiddenSections,
+    sections: parsed.sections ?? defaultConfig.sections,
   };
 }
 
@@ -103,9 +31,18 @@ export const getConfig = cache(async (): Promise<SiteConfig> => {
     }
   }
 
-  // Blob mode: find config.json in the blob store
+  // Blob mode: find config.json in the blob store. `list()`'s index can lag
+  // slightly behind a just-completed write — separate from, and in addition
+  // to, the public URL's own CDN caching handled below — so a save can
+  // briefly look like it "disappeared" if a read lands in that window.
+  // Retry a few times with a short delay before conceding defaultConfig.
   const { list } = await import('@vercel/blob');
-  const { blobs } = await list({ prefix: 'config.json', limit: 1 });
+  let blobs: Awaited<ReturnType<typeof list>>['blobs'] = [];
+  for (let attempt = 0; attempt < 3; attempt++) {
+    ({ blobs } = await list({ prefix: 'config.json', limit: 1 }));
+    if (blobs.length > 0) break;
+    if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 300));
+  }
 
   if (blobs.length === 0) {
     return defaultConfig;
