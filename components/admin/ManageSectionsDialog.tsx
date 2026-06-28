@@ -21,7 +21,7 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { useAdmin } from '@/lib/admin-context';
 import type { SectionInstance } from '@/lib/config/types';
-import { SECTION_REGISTRY, getInstanceLabel } from '@/lib/sections/registry';
+import { SECTION_REGISTRY, getInstanceLabel, getInstanceContentTitle } from '@/lib/sections/registry';
 
 /** Roughly estimates whether removing this instance would discard real
  * content (vs. an untouched default) — drives whether removal needs a
@@ -90,7 +90,8 @@ export default function ManageSectionsDialog({
           <List disablePadding>
             {sections.map((instance) => {
               const def = SECTION_REGISTRY[instance.type];
-              const label = getInstanceLabel(instance, sections);
+              const typeLabel = def?.label ?? instance.type;
+              const contentTitle = getInstanceContentTitle(instance);
               const isDragging = draggedId === instance.id;
               const isOver = dragOverId === instance.id;
               return (
@@ -145,10 +146,7 @@ export default function ManageSectionsDialog({
                   }
                 >
                   <DragIndicatorIcon sx={{ opacity: 0.4, mr: 1 }} fontSize="small" />
-                  <ListItemText
-                    primary={label}
-                    secondary={def?.label && def.label !== label ? def.label : undefined}
-                  />
+                  <ListItemText primary={typeLabel} secondary={contentTitle} />
                 </ListItem>
               );
             })}

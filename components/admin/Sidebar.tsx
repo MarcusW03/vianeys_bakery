@@ -14,7 +14,6 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
-import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import EditIcon from '@mui/icons-material/Edit';
 import EyeIcon from '@mui/icons-material/Visibility';
@@ -239,43 +238,42 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
       {isAdmin && (
         <div className="px-3 py-3 border-b" style={{ borderColor: 'color-mix(in srgb, var(--theme-primary) 20%, transparent)' }}>
           {!editMode ? (
-            <button
+            <Button
               onClick={enterEditMode}
-              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
-              style={{ background: 'var(--theme-primary)' }}
+              fullWidth
+              variant="contained"
+              startIcon={<EditIcon sx={{ fontSize: 16 }} />}
+              sx={{ background: 'var(--theme-primary)', '&:hover': { background: 'var(--theme-primary)', opacity: 0.9 } }}
             >
-              <EditIcon sx={{ fontSize: 16 }} />
               Edit Site
-            </button>
+            </Button>
           ) : (
-            <div className="flex flex-col gap-2">
-              <button
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
-                style={{ background: 'var(--theme-primary)' }}
+                fullWidth
+                variant="contained"
+                startIcon={isSaving ? <CircularProgress size={14} sx={{ color: 'white' }} /> : <SaveIcon sx={{ fontSize: 15 }} />}
+                sx={{ background: 'var(--theme-primary)', '&:hover': { background: 'var(--theme-primary)', opacity: 0.9 } }}
               >
-                {isSaving ? (
-                  <CircularProgress size={14} sx={{ color: 'white' }} />
-                ) : (
-                  <SaveIcon sx={{ fontSize: 15 }} />
-                )}
                 {isSaving ? 'Saving…' : 'Save Changes'}
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={discardChanges}
                 disabled={isSaving}
-                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 hover:opacity-80 disabled:opacity-50"
-                style={{
+                fullWidth
+                variant="outlined"
+                startIcon={<UndoIcon sx={{ fontSize: 15 }} />}
+                sx={{
                   background: 'color-mix(in srgb, var(--theme-accent) 10%, transparent)',
                   color: 'var(--theme-accent)',
-                  border: '1px solid color-mix(in srgb, var(--theme-accent) 25%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--theme-accent) 25%, transparent)',
                 }}
               >
-                <UndoIcon sx={{ fontSize: 15 }} />
                 Discard
-              </button>
-            </div>
+              </Button>
+            </Box>
           )}
         </div>
       )}
@@ -290,7 +288,7 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
             Sections — drag to reorder
           </p>
         )}
-        <ul className="flex flex-col gap-0.5">
+        <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           {navSections.map((instance) => {
             const isHidden = !!instance.hidden;
             const title = getInstanceLabel(instance, sections);
@@ -298,57 +296,70 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
             const isOver = dragOverSection === instance.id;
 
             return (
-              <li
+              <ListItemButton
                 key={instance.id}
+                onClick={() => scrollTo(instance.type)}
                 draggable={editMode && isAdmin}
                 onDragStart={(e) => handleDragStart(e, instance.id, title)}
                 onDragOver={(e) => handleDragOver(e, instance.id)}
                 onDrop={(e) => handleDrop(e, instance.id)}
                 onDragEnd={handleDragEnd}
-                style={{
+                disableGutters
+                className="sidebar-item-hover"
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  px: 1.5,
+                  py: 1,
+                  borderRadius: 2,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: 'var(--theme-accent)',
+                  cursor: editMode && isAdmin ? 'grab' : 'pointer',
                   opacity: isDragging ? 0.4 : isHidden && editMode ? 0.45 : 1,
-                  borderTop: isOver && !isDragging
-                    ? '2px solid var(--theme-primary)'
-                    : '2px solid transparent',
+                  borderTop: '2px solid',
+                  borderTopColor: isOver && !isDragging ? 'var(--theme-primary)' : 'transparent',
                   transition: 'opacity 0.15s, border-color 0.1s',
                 }}
               >
-                <div className="sidebar-item-hover flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150">
-                  <button
-                    onClick={() => scrollTo(instance.type)}
-                    className="flex-1 flex items-center gap-2 text-left min-w-0 bg-transparent border-0"
-                    style={{ color: 'var(--theme-accent)', cursor: editMode && isAdmin ? 'grab' : 'pointer' }}
+                {editMode && isAdmin && (
+                  <ListItemIcon sx={{ minWidth: 'auto' }}>
+                    <DragIndicatorIcon
+                      sx={{ fontSize: 14, opacity: 0.4, flexShrink: 0, pointerEvents: 'none' }}
+                    />
+                  </ListItemIcon>
+                )}
+                <ListItemText
+                  primary={title}
+                  slotProps={{ primary: { noWrap: true, sx: { fontSize: 14, fontWeight: 500 } } }}
+                  sx={{ flex: 1, minWidth: 0 }}
+                />
+                {editMode && isAdmin && (
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleSectionVisibility(instance.id);
+                    }}
+                    sx={{
+                      p: 0.25,
+                      color: isHidden ? 'var(--theme-primary)' : 'inherit',
+                      opacity: 0.6,
+                      '&:hover': { opacity: 1 },
+                    }}
                   >
-                    {editMode && isAdmin && (
-                      <DragIndicatorIcon
-                        sx={{ fontSize: 14, opacity: 0.4, flexShrink: 0, pointerEvents: 'none' }}
-                      />
+                    {isHidden ? (
+                      <EyeOffIcon sx={{ fontSize: 15 }} />
+                    ) : (
+                      <EyeIcon sx={{ fontSize: 15 }} />
                     )}
-                    <span className="flex-1 truncate">{title}</span>
-                  </button>
-                  {editMode && isAdmin && (
-                    <IconButton
-                      size="small"
-                      onClick={() => toggleSectionVisibility(instance.id)}
-                      sx={{
-                        p: 0.25,
-                        color: isHidden ? 'var(--theme-primary)' : 'inherit',
-                        opacity: 0.6,
-                        '&:hover': { opacity: 1 },
-                      }}
-                    >
-                      {isHidden ? (
-                        <EyeOffIcon sx={{ fontSize: 15 }} />
-                      ) : (
-                        <EyeIcon sx={{ fontSize: 15 }} />
-                      )}
-                    </IconButton>
-                  )}
-                </div>
-              </li>
+                  </IconButton>
+                )}
+              </ListItemButton>
             );
           })}
-        </ul>
+        </List>
       </nav>
 
       {/* ── Color palette — 3 reusable swatches. Each section picks which of ── */
@@ -412,31 +423,34 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
           }}
         >
           {editMode && (
-            <button
+            <Button
               onClick={() => setManageSectionsOpen(true)}
-              className="sidebar-item-hover w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150"
-              style={{ color: 'var(--theme-accent)' }}
+              fullWidth
+              className="sidebar-item-hover"
+              startIcon={<ViewQuiltIcon sx={{ fontSize: 16, opacity: 0.6 }} />}
+              sx={{ justifyContent: 'flex-start', color: 'var(--theme-accent)', fontWeight: 500, fontSize: 14 }}
             >
-              <ViewQuiltIcon sx={{ fontSize: 16, opacity: 0.6 }} />
               Manage Sections
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             onClick={() => setImageLibraryOpen(true)}
-            className="sidebar-item-hover w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150"
-            style={{ color: 'var(--theme-accent)' }}
+            fullWidth
+            className="sidebar-item-hover"
+            startIcon={<PhotoLibraryIcon sx={{ fontSize: 16, opacity: 0.6 }} />}
+            sx={{ justifyContent: 'flex-start', color: 'var(--theme-accent)', fontWeight: 500, fontSize: 14 }}
           >
-            <PhotoLibraryIcon sx={{ fontSize: 16, opacity: 0.6 }} />
             Image Library
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => signOut({ callbackUrl: '/' })}
-            className="sidebar-item-hover w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150"
-            style={{ color: 'var(--theme-accent)' }}
+            fullWidth
+            className="sidebar-item-hover"
+            startIcon={<LogoutIcon sx={{ fontSize: 16, opacity: 0.6 }} />}
+            sx={{ justifyContent: 'flex-start', color: 'var(--theme-accent)', fontWeight: 500, fontSize: 14 }}
           >
-            <LogoutIcon sx={{ fontSize: 16, opacity: 0.6 }} />
             Sign Out
-          </button>
+          </Button>
         </div>
       )}
 

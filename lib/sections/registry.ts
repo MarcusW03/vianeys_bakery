@@ -57,7 +57,7 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition<any>> = {
   },
   featured: {
     type: 'featured',
-    label: 'Our Work',
+    label: 'Featured Gallery',
     defaultContent: {
       imageUrls: [],
       sectionTitle: 'My Work',
@@ -84,7 +84,7 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition<any>> = {
   },
   pricing: {
     type: 'pricing',
-    label: 'Pricing',
+    label: 'Card Grid',
     defaultContent: {
       headline: 'Pricing',
       items: [
@@ -119,7 +119,7 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition<any>> = {
   },
   'how-to-order': {
     type: 'how-to-order',
-    label: 'How to Order',
+    label: 'Numbered List',
     defaultContent: {
       headline: 'How to Order',
       steps: [
@@ -154,7 +154,7 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition<any>> = {
   },
   about: {
     type: 'about',
-    label: 'About',
+    label: 'Image with Text',
     defaultContent: {
       headline: 'Made with Passion',
       body: "Hi, I'm Vianey! I've been baking custom cakes and pastries since 2015. Every order is made from scratch using quality ingredients — no shortcuts, no mixes. I love turning your ideas into edible art.",
@@ -165,7 +165,7 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition<any>> = {
   },
   contact: {
     type: 'contact',
-    label: 'Get in Touch',
+    label: 'Contact',
     defaultContent: {
       sectionTitle: 'Contact',
       links: [{ id: 'messenger', label: 'Messenger', url: '' }],
@@ -186,19 +186,30 @@ export const DEFAULT_SECTION_ORDER = [
   'contact',
 ];
 
+/** The admin-facing title baked into an instance's own content, if it has
+ * one — different section types name this field differently (`sectionTitle`
+ * for Featured/Gallery/Contact, `headline` for Pricing/HowToOrder/About/Hero)
+ * so this checks both rather than assuming one field name. */
+export function getInstanceContentTitle(instance: SectionInstance): string | undefined {
+  const content = instance.content as { sectionTitle?: unknown; headline?: unknown };
+  if (typeof content?.sectionTitle === 'string' && content.sectionTitle) return content.sectionTitle;
+  if (typeof content?.headline === 'string' && content.headline) return content.headline;
+  return undefined;
+}
+
 /** Human-readable label for one instance — prefers the instance's own
- * `content.sectionTitle` where one exists, otherwise falls back to the
- * registry's type label, disambiguated with "(n)" once a type has more
- * than one instance (e.g. a second Gallery section). */
+ * content title where one exists, otherwise falls back to the registry's
+ * type label, disambiguated with "(n)" once a type has more than one
+ * instance (e.g. a second Gallery section). */
 export function getInstanceLabel(
   instance: SectionInstance,
   allSections: SectionInstance[],
 ): string {
+  const contentTitle = getInstanceContentTitle(instance);
+  if (contentTitle) return contentTitle;
+
   const def = SECTION_REGISTRY[instance.type];
   const label = def?.label ?? instance.type;
-  const sectionTitle = (instance.content as { sectionTitle?: unknown })?.sectionTitle;
-  if (typeof sectionTitle === 'string' && sectionTitle) return sectionTitle;
-
   const siblings = allSections.filter((s) => s.type === instance.type);
   if (siblings.length <= 1) return label;
   const index = siblings.findIndex((s) => s.id === instance.id) + 1;
