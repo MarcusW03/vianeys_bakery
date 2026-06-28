@@ -298,7 +298,11 @@ export default function Sidebar({ config, adminName }: SidebarProps) {
     display: 'flex',
     flexDirection: 'column' as const,
     overflow: 'hidden',
-    border: 'none',
+    // A floating rounded card reads as a card on all 4 edges, not just the
+    // old flush-left single divider — the translucent tint alone was too
+    // close to the page's own warm off-white to register as a distinct
+    // surface at a glance.
+    border: '1px solid color-mix(in srgb, var(--theme-primary) 20%, transparent)',
     borderRadius: 'var(--radius-md)',
     // MUI's default Paper style sets an explicit height (100%, i.e. full
     // viewport for a fixed-position element) — with top AND bottom also

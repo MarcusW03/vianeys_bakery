@@ -62,7 +62,7 @@ export default function ImageWithTextSection({
 
         {/* Text */}
         <div>
-          <h2 className="text-3xl font-bold mb-4" style={{ color: headingColor }}>
+          <h2 className="text-3xl font-bold mb-4 tracking-tight" style={{ color: headingColor }}>
             <EditableText
               value={data.headline}
               onChange={(val) => onContentChange({ headline: val })}

@@ -4,7 +4,10 @@ import { SECTION_REGISTRY, DEFAULT_SECTION_ORDER } from '@/lib/sections/registry
 export const defaultConfig: SiteConfig = {
   siteName: "Vianey's Bakery",
   theme: {
-    primaryColor: '#adadad',
+    // A warm rose, not a flat gray — Color 1 drives every CTA button and
+    // accent across the site, so it needs to read as an intentional brand
+    // color rather than a placeholder.
+    primaryColor: '#c2667a',
     secondaryColor: '#fff0fb',
     accentColor: '#997178',
   },

@@ -172,7 +172,7 @@ export default function GallerySection({
       {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
       <div className="max-w-6xl mx-auto">
         <h2
-          className="text-3xl font-bold text-center mb-8"
+          className="text-3xl font-bold text-center mb-8 tracking-tight"
           style={{ color: headingColor }}
         >
           <EditableText

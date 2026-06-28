@@ -78,7 +78,7 @@ export default function HeroSection({
 
       {/* Content */}
       <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
-        <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight" style={{ color: headingColor }}>
+        <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight tracking-tighter" style={{ color: headingColor }}>
           <EditableText
             value={data.headline}
             onChange={(val) => onContentChange({ headline: val })}

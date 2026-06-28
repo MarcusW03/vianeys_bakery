@@ -75,7 +75,7 @@ export default function ContactSection({
     >
       {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-12" style={{ color: headingColor }}>
+        <h2 className="text-3xl font-bold text-center mb-12 tracking-tight" style={{ color: headingColor }}>
           <EditableText
             value={sectionTitle}
             onChange={(val) => onContentChange({ sectionTitle: val })}

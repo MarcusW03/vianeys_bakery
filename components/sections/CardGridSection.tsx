@@ -47,7 +47,7 @@ export default function CardGridSection({
     >
       {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
       <div className="max-w-5xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-12" style={{ color: headingColor }}>
+        <h2 className="text-3xl font-bold text-center mb-12 tracking-tight" style={{ color: headingColor }}>
           <EditableText
             value={headline}
             onChange={(val) => onContentChange({ headline: val })}
@@ -67,7 +67,8 @@ export default function CardGridSection({
                 flexDirection: 'column',
                 height: '100%',
                 borderColor: 'color-mix(in srgb, var(--theme-secondary) 80%, transparent)',
-                '&:hover': { boxShadow: 2 },
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                '&:hover': { transform: 'translateY(-3px)', boxShadow: 'var(--shadow-md)' },
               }}
             >
               {editMode && <RemoveIconButton onClick={() => removeItem(item.id)} ariaLabel="Remove item" />}
