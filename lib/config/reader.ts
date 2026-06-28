@@ -31,9 +31,18 @@ export const getConfig = cache(async (): Promise<SiteConfig> => {
     }
   }
 
-  // Blob mode: find config.json in the blob store
+  // Blob mode: find config.json in the blob store. `list()`'s index can lag
+  // slightly behind a just-completed write — separate from, and in addition
+  // to, the public URL's own CDN caching handled below — so a save can
+  // briefly look like it "disappeared" if a read lands in that window.
+  // Retry a few times with a short delay before conceding defaultConfig.
   const { list } = await import('@vercel/blob');
-  const { blobs } = await list({ prefix: 'config.json', limit: 1 });
+  let blobs: Awaited<ReturnType<typeof list>>['blobs'] = [];
+  for (let attempt = 0; attempt < 3; attempt++) {
+    ({ blobs } = await list({ prefix: 'config.json', limit: 1 }));
+    if (blobs.length > 0) break;
+    if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 300));
+  }
 
   if (blobs.length === 0) {
     return defaultConfig;
