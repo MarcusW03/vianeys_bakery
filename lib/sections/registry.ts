@@ -221,3 +221,24 @@ export function getInstanceLabel(
   const index = siblings.findIndex((s) => s.id === instance.id) + 1;
   return `${label} (${index})`;
 }
+
+function slugify(text: string): string {
+  const slug = text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return slug || 'section';
+}
+
+/** The `id` attribute a section renders with on the page, and what nav
+ * links/anchors scroll to — derived from the instance's current label
+ * (its own title where set, e.g. "How to Order" -> "how-to-order") rather
+ * than its fixed type, so the anchor follows the admin's title edits and
+ * reads as a real word in the URL instead of an internal type string. */
+export function getSectionAnchorId(
+  instance: SectionInstance,
+  allSections: SectionInstance[],
+): string {
+  return slugify(getInstanceLabel(instance, allSections));
+}

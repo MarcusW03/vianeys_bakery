@@ -6,12 +6,14 @@ import EditableImage from '@/components/admin/EditableImage';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
 import type { ImageWithTextContent } from '@/lib/config/types';
 import { resolveStyleColor } from '@/lib/config/section-background';
+import { getSectionAnchorId } from '@/lib/sections/registry';
 import type { SectionRendererProps } from '@/lib/sections/registry';
 
 export default function ImageWithTextSection({
   instance,
   editMode,
   onContentChange,
+  allSections,
 }: SectionRendererProps<ImageWithTextContent>) {
   const data = instance.content;
   const style = instance.style;
@@ -20,8 +22,8 @@ export default function ImageWithTextSection({
 
   return (
     <section
-      id="image-with-text"
-      className={`py-20 px-6 rounded-[var(--radius-lg)] overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
+      id={getSectionAnchorId(instance, allSections)}
+      className={`py-20 px-6 rounded-[var(--radius-md)] overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, '#ffffff') }}
     >
       {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}

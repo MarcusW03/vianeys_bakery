@@ -28,7 +28,7 @@ import UndoIcon from '@mui/icons-material/Undo';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { useAdmin } from '@/lib/admin-context';
 import type { SiteConfig } from '@/lib/config/types';
-import { SECTION_REGISTRY, getInstanceLabel } from '@/lib/sections/registry';
+import { SECTION_REGISTRY, getInstanceLabel, getSectionAnchorId } from '@/lib/sections/registry';
 import ImagePicker from './ImagePicker';
 import ManageSectionsDialog from './ManageSectionsDialog';
 
@@ -141,11 +141,11 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
     }
   };
 
-  const scrollTo = (sectionType: string) => {
+  const scrollTo = (anchorId: string) => {
     onClose?.();
     // Small delay on mobile so the drawer can close first
     setTimeout(() => {
-      document.getElementById(sectionType)?.scrollIntoView({ behavior: 'smooth' });
+      document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth' });
     }, onClose ? 200 : 0);
   };
 
@@ -194,11 +194,11 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
   return (
     <>
       {/* ── Header ── */}
-      <div className="sidebar-header-bg px-4 py-4 flex flex-col gap-0.5">
+      <div className="px-3 py-3 flex flex-col gap-0.5">
         {isAdmin && (
           <span
             className="text-[10px] font-semibold tracking-widest uppercase"
-            style={{ color: 'rgba(255,255,255,0.5)' }}
+            style={{ color: 'color-mix(in srgb, var(--theme-accent) 55%, transparent)' }}
           >
             Admin · {adminName ?? 'Admin'}
           </span>
@@ -212,7 +212,7 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
             slotProps={{
               input: {
                 style: {
-                  color: 'white',
+                  color: 'var(--theme-accent)',
                   fontWeight: 700,
                   fontSize: '1rem',
                   letterSpacing: '-0.01em',
@@ -220,14 +220,14 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
               },
             }}
             sx={{
-              '& .MuiInput-underline:before': { borderBottomColor: 'rgba(255,255,255,0.3)' },
-              '& .MuiInput-underline:after': { borderBottomColor: 'rgba(255,255,255,0.8)' },
+              '& .MuiInput-underline:before': { borderBottomColor: 'color-mix(in srgb, var(--theme-accent) 30%, transparent)' },
+              '& .MuiInput-underline:after': { borderBottomColor: 'color-mix(in srgb, var(--theme-accent) 80%, transparent)' },
             }}
           />
         ) : (
           <span
             className="font-bold text-base tracking-tight leading-snug"
-            style={{ color: 'rgba(255,255,255,0.95)' }}
+            style={{ color: 'var(--theme-accent)' }}
           >
             {displayConfig.siteName}
           </span>
@@ -236,7 +236,7 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
 
       {/* ── Admin edit controls ── */}
       {isAdmin && (
-        <div className="px-3 py-3 border-b" style={{ borderColor: 'color-mix(in srgb, var(--theme-primary) 20%, transparent)' }}>
+        <div className="px-2.5 py-2.5 border-b" style={{ borderColor: 'color-mix(in srgb, var(--theme-primary) 20%, transparent)' }}>
           {!editMode ? (
             <Button
               onClick={enterEditMode}
@@ -279,7 +279,7 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
       )}
 
       {/* ── Section navigation ── */}
-      <nav className="flex-1 overflow-y-auto px-2 py-2 min-h-0">
+      <nav className="flex-1 overflow-y-auto px-1.5 py-1.5 min-h-0">
         {isAdmin && editMode && (
           <p
             className="px-2 pb-1 text-[10px] font-semibold tracking-widest uppercase"
@@ -298,7 +298,7 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
             return (
               <ListItemButton
                 key={instance.id}
-                onClick={() => scrollTo(instance.type)}
+                onClick={() => scrollTo(getSectionAnchorId(instance, sections))}
                 draggable={editMode && isAdmin}
                 onDragStart={(e) => handleDragStart(e, instance.id, title)}
                 onDragOver={(e) => handleDragOver(e, instance.id)}
@@ -368,7 +368,7 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
       /*    mode — see SectionStyleEditor.                                    */}
       {isAdmin && editMode && theme && (
         <div
-          className="px-3 py-3"
+          className="px-2.5 py-2.5"
           style={{
             borderTop: '1px solid color-mix(in srgb, var(--theme-primary) 18%, transparent)',
           }}
@@ -416,7 +416,7 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
       {/* ── Admin footer: image library + logout ── */}
       {isAdmin && (
         <div
-          className="px-2 py-2"
+          className="px-1.5 py-1.5"
           style={{
             borderTop: '1px solid color-mix(in srgb, var(--theme-primary) 18%, transparent)',
             flexShrink: 0,
@@ -514,7 +514,14 @@ export default function Sidebar({ config, adminName }: SidebarProps) {
       flexDirection: 'column' as const,
       overflow: 'hidden',
       border: 'none',
-      borderRadius: 'var(--radius-lg)',
+      borderRadius: 'var(--radius-md)',
+      // MUI's default Paper style sets an explicit height (100%, i.e. full
+      // viewport for a fixed-position element) — with top AND bottom also
+      // set, that over-constrains the box and CSS resolves it by ignoring
+      // `bottom`, so the panel renders at a fixed full-viewport height and
+      // overflows past the bottom inset instead of sizing dynamically.
+      // `height: 'auto'` lets top+bottom imply the height instead.
+      height: 'auto',
       top: 'var(--page-gutter)',
       bottom: 'var(--page-gutter)',
       left: 'var(--page-gutter)',
@@ -561,7 +568,7 @@ export default function Sidebar({ config, adminName }: SidebarProps) {
       >
         <div className="flex flex-col h-full">
           {/* Close button */}
-          <div className="flex justify-end px-2 pt-2">
+          <div className="flex justify-end px-1.5 pt-1.5">
             <IconButton
               onClick={() => setMobileOpen(false)}
               size="small"

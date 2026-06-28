@@ -16,12 +16,14 @@ import EditableText from '@/components/admin/EditableText';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
 import type { ContactLink, ContactSectionContent } from '@/lib/config/types';
 import { resolveStyleColor } from '@/lib/config/section-background';
+import { getSectionAnchorId } from '@/lib/sections/registry';
 import type { SectionRendererProps } from '@/lib/sections/registry';
 
 export default function ContactSection({
   instance,
   editMode,
   onContentChange,
+  allSections,
 }: SectionRendererProps<ContactSectionContent>) {
   const { links, sectionTitle } = instance.content;
   const style = instance.style;
@@ -64,8 +66,8 @@ export default function ContactSection({
 
   return (
     <section
-      id="contact"
-      className={`py-20 px-6 rounded-[var(--radius-lg)] overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
+      id={getSectionAnchorId(instance, allSections)}
+      className={`py-20 px-6 rounded-[var(--radius-md)] overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-secondary)') }}
     >
       {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}

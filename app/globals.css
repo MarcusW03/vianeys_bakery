@@ -78,10 +78,6 @@
   box-shadow: 2px 0 16px 0 color-mix(in srgb, var(--theme-accent) 8%, transparent);
 }
 
-.sidebar-header-bg {
-  background-color: color-mix(in srgb, var(--theme-accent) 92%, transparent);
-}
-
 .sidebar-item-hover:hover {
   background-color: color-mix(in srgb, var(--theme-primary) 12%, transparent);
   color: var(--theme-accent);
@@ -115,6 +111,12 @@ html {
   position: relative;
   outline: 2px dashed color-mix(in srgb, var(--theme-primary) 55%, transparent);
   outline-offset: -2px;
-  border-radius: inherit;
+  /* No border-radius here: this class is applied alongside a rounded-[...]
+     Tailwind class on the same element, which already sets border-radius.
+     `border-radius: inherit` (a previous attempt at this) was wrong — it
+     pulls the PARENT element's radius, not the value from a sibling class
+     on this same element, so it was actually zeroing the corners back to
+     sharp. Modern browsers already curve `outline` to follow whatever
+     border-radius the element has, so this needs nothing extra. */
 }
 

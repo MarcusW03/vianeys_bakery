@@ -20,6 +20,7 @@ import AddTileCard from '@/components/sections/shared/AddTileCard';
 import RemoveIconButton from '@/components/sections/shared/RemoveIconButton';
 import { resolveStyleColor } from '@/lib/config/section-background';
 import type { GalleryCategory, GalleryImage, GalleryContent } from '@/lib/config/types';
+import { getSectionAnchorId } from '@/lib/sections/registry';
 import type { SectionRendererProps } from '@/lib/sections/registry';
 
 // Cell size in px — shared between desktop and mobile so math is consistent
@@ -29,6 +30,7 @@ export default function GallerySection({
   instance,
   editMode,
   onContentChange,
+  allSections,
 }: SectionRendererProps<GalleryContent>) {
   const { categories, sectionTitle } = instance.content;
   const style = instance.style;
@@ -148,8 +150,8 @@ export default function GallerySection({
 
   return (
     <section
-      id="gallery"
-      className={`py-20 px-6 rounded-[var(--radius-lg)] overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
+      id={getSectionAnchorId(instance, allSections)}
+      className={`py-20 px-6 rounded-[var(--radius-md)] overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, '#ffffff') }}
     >
       {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}

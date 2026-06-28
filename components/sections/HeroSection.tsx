@@ -9,7 +9,7 @@ import EditableImage from '@/components/admin/EditableImage';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
 import type { HeroContent } from '@/lib/config/types';
 import { resolveStyleColor } from '@/lib/config/section-background';
-import { getInstanceLabel } from '@/lib/sections/registry';
+import { getInstanceLabel, getSectionAnchorId } from '@/lib/sections/registry';
 import type { SectionRendererProps } from '@/lib/sections/registry';
 
 export default function HeroSection({
@@ -25,12 +25,12 @@ export default function HeroSection({
 
   const targetOptions = allSections.filter((s) => s.id !== instance.id);
   const targetInstance = allSections.find((s) => s.id === data.ctaTargetId);
-  const ctaHref = targetInstance ? `#${targetInstance.type}` : undefined;
+  const ctaHref = targetInstance ? `#${getSectionAnchorId(targetInstance, allSections)}` : undefined;
 
   return (
     <section
-      id="hero"
-      className={`relative w-full min-h-[70vh] flex items-center justify-center overflow-hidden rounded-[var(--radius-lg)] shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
+      id={getSectionAnchorId(instance, allSections)}
+      className={`relative w-full min-h-[70vh] flex items-center justify-center overflow-hidden rounded-[var(--radius-md)] shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-accent)') }}
     >
       {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
@@ -100,7 +100,7 @@ export default function HeroSection({
           variant="contained"
           size="large"
           sx={{
-            borderRadius: 999,
+            borderRadius: 'var(--radius-md)',
             px: 4,
             py: 2,
             fontSize: 18,
