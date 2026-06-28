@@ -503,30 +503,47 @@ export default function Sidebar({ config, adminName }: SidebarProps) {
   // Floating glass card: inset on all sides by --page-gutter (top/bottom/left
   // here; the temporary/mobile Drawer below adds `right` too since it isn't
   // anchored to the viewport edge the way the permanent one's reserved flex
-  // space is). Rounded on every corner and given a translucent, theme-driven
-  // background instead of the old flush/opaque panel — no backdrop-filter
-  // blur, just the tint + radius + elevated shadow reading as "glass".
+  // space is). Rounded on every corner — no backdrop-filter blur, just a
+  // tint + radius + elevated shadow reading as "glass".
+  const drawerPaperBase = {
+    width: 'var(--sidebar-width)',
+    boxSizing: 'border-box' as const,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    overflow: 'hidden',
+    border: 'none',
+    borderRadius: 'var(--radius-md)',
+    // MUI's default Paper style sets an explicit height (100%, i.e. full
+    // viewport for a fixed-position element) — with top AND bottom also
+    // set, that over-constrains the box and CSS resolves it by ignoring
+    // `bottom`, so the panel renders at a fixed full-viewport height and
+    // overflows past the bottom inset instead of sizing dynamically.
+    // `height: 'auto'` lets top+bottom imply the height instead.
+    height: 'auto',
+    top: 'var(--page-gutter)',
+    bottom: 'var(--page-gutter)',
+    left: 'var(--page-gutter)',
+    boxShadow: 'var(--shadow-lg)',
+  };
+
+  // Desktop: floats in its own reserved gutter beside the page content —
+  // nothing renders directly underneath it, so a translucent tint reads as
+  // glass without hurting legibility.
   const drawerSx = {
     '& .MuiDrawer-paper': {
-      width: 'var(--sidebar-width)',
-      boxSizing: 'border-box' as const,
-      display: 'flex',
-      flexDirection: 'column' as const,
-      overflow: 'hidden',
-      border: 'none',
-      borderRadius: 'var(--radius-md)',
-      // MUI's default Paper style sets an explicit height (100%, i.e. full
-      // viewport for a fixed-position element) — with top AND bottom also
-      // set, that over-constrains the box and CSS resolves it by ignoring
-      // `bottom`, so the panel renders at a fixed full-viewport height and
-      // overflows past the bottom inset instead of sizing dynamically.
-      // `height: 'auto'` lets top+bottom imply the height instead.
-      height: 'auto',
-      top: 'var(--page-gutter)',
-      bottom: 'var(--page-gutter)',
-      left: 'var(--page-gutter)',
+      ...drawerPaperBase,
       background: 'color-mix(in srgb, var(--theme-secondary) 45%, transparent)',
-      boxShadow: 'var(--shadow-lg)',
+    },
+  };
+
+  // Mobile: a temporary overlay that genuinely sits on top of page content
+  // (there's no gutter pushing main content out of the way) — the same
+  // translucent tint let whatever was underneath show through and made the
+  // nav hard to read, so this stays fully opaque instead.
+  const mobileDrawerSx = {
+    '& .MuiDrawer-paper': {
+      ...drawerPaperBase,
+      background: 'color-mix(in srgb, var(--theme-secondary) 55%, white 45%)',
     },
   };
 
@@ -567,7 +584,7 @@ export default function Sidebar({ config, adminName }: SidebarProps) {
         ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: 'block', md: 'none' },
-          ...drawerSx,
+          ...mobileDrawerSx,
         }}
       >
         <div className="flex flex-col h-full">
