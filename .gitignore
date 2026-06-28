@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local dev storage (gitignored — use Vercel Blob in production)
+public/uploads/
+data/config.json
+data/session-version.json
+
+files.zip

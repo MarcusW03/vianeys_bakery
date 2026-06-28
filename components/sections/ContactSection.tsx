@@ -1,0 +1,189 @@
+'use client';
+
+import { useState } from 'react';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import { useAdmin } from '@/lib/admin-context';
+import EditableText from '@/components/admin/EditableText';
+import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
+import type { ContactContent, ContactLink, SectionStyle } from '@/lib/config/types';
+import { resolveStyleColor, DEFAULT_SECTION_STYLE } from '@/lib/config/section-background';
+
+interface ContactSectionProps {
+  data: ContactContent;
+  sectionTitle: string;
+  sectionStyle?: SectionStyle;
+}
+
+export default function ContactSection({ data, sectionTitle, sectionStyle }: ContactSectionProps) {
+  const { editMode, updateContact, updateSectionTitles } = useAdmin();
+  const style = sectionStyle ?? DEFAULT_SECTION_STYLE;
+  const headingColor = resolveStyleColor(style.heading, 'var(--theme-accent)');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingLink, setEditingLink] = useState<ContactLink | null>(null);
+  const [editLabel, setEditLabel] = useState('');
+  const [editUrl, setEditUrl] = useState('');
+
+  const openEdit = (link: ContactLink) => {
+    setEditingLink(link);
+    setEditLabel(link.label);
+    setEditUrl(link.url);
+    setDialogOpen(true);
+  };
+
+  const openAdd = () => {
+    setEditingLink(null);
+    setEditLabel('');
+    setEditUrl('');
+    setDialogOpen(true);
+  };
+
+  const handleSaveLink = () => {
+    if (!editLabel || !editUrl) return;
+    const updatedLinks = editingLink
+      ? data.links.map((l) =>
+          l.id === editingLink.id ? { ...l, label: editLabel, url: editUrl } : l,
+        )
+      : [...data.links, { id: `link-${Date.now()}`, label: editLabel, url: editUrl }];
+    updateContact({ links: updatedLinks });
+    setDialogOpen(false);
+  };
+
+  const handleDeleteLink = (id: string) => {
+    updateContact({ links: data.links.filter((l) => l.id !== id) });
+  };
+
+  const validLinks = data.links.filter((l) => l.url);
+
+  return (
+    <section
+      id="contact"
+      className={`py-20 px-6 ${editMode ? 'edit-mode-section-outline' : ''}`}
+      style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-secondary)') }}
+    >
+      {editMode && <SectionStyleEditor sectionId="contact" style={style} />}
+      <div className="max-w-4xl mx-auto">
+        <h2 className="text-3xl font-bold text-center mb-12" style={{ color: headingColor }}>
+          <EditableText
+            value={sectionTitle}
+            onChange={(val) => updateSectionTitles({ contact: val })}
+            variant="light"
+          />
+        </h2>
+
+        <div className="flex flex-wrap justify-center gap-4">
+          {editMode ? (
+            <>
+              {data.links.map((link) => (
+                <Box
+                  key={link.id}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    px: 2,
+                    py: 1,
+                    bgcolor: 'white',
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                  }}
+                >
+                  <div className="text-sm">
+                    <div className="font-medium" style={{ color: 'var(--theme-accent)' }}>
+                      {link.label}
+                    </div>
+                    <div className="text-xs text-gray-400 truncate max-w-[160px]">
+                      {link.url || '(no URL)'}
+                    </div>
+                  </div>
+                  <IconButton size="small" onClick={() => openEdit(link)} sx={{ ml: 0.5 }}>
+                    <EditOutlinedIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleDeleteLink(link.id)}
+                  >
+                    <DeleteIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </Box>
+              ))}
+              <Button
+                variant="outlined"
+                startIcon={<AddIcon />}
+                onClick={openAdd}
+                size="small"
+                sx={{ borderRadius: 2 }}
+              >
+                Add Link
+              </Button>
+            </>
+          ) : (
+            validLinks.map((link) => (
+              <a
+                key={link.id}
+                href={link.url}
+                target={
+                  link.url.startsWith('mailto:') || link.url.startsWith('tel:')
+                    ? undefined
+                    : '_blank'
+                }
+                rel="noopener noreferrer"
+                className="px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200 hover:opacity-85 hover:shadow-md active:scale-[0.97]"
+                style={{ backgroundColor: 'var(--theme-primary)' }}
+              >
+                {link.label}
+              </a>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Edit / Add link dialog */}
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{editingLink ? 'Edit Link' : 'Add Link'}</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Link Text"
+            value={editLabel}
+            onChange={(e) => setEditLabel(e.target.value)}
+            placeholder="e.g., Call us"
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="URL"
+            value={editUrl}
+            onChange={(e) => setEditUrl(e.target.value)}
+            placeholder="e.g., tel:+1-555-000-0000 or https://instagram.com/…"
+            helperText="Use tel: for phone numbers, mailto: for email addresses"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleSaveLink}
+            variant="contained"
+            disabled={!editLabel || !editUrl}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </section>
+  );
+}
