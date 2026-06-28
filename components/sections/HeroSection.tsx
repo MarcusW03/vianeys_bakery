@@ -2,27 +2,35 @@
 
 import Image from 'next/image';
 import Button from '@mui/material/Button';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 import EditableText from '@/components/admin/EditableText';
 import EditableImage from '@/components/admin/EditableImage';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
 import type { HeroContent } from '@/lib/config/types';
 import { resolveStyleColor } from '@/lib/config/section-background';
+import { getInstanceLabel } from '@/lib/sections/registry';
 import type { SectionRendererProps } from '@/lib/sections/registry';
 
 export default function HeroSection({
   instance,
   editMode,
   onContentChange,
+  allSections,
 }: SectionRendererProps<HeroContent>) {
   const data = instance.content;
   const style = instance.style;
   const headingColor = resolveStyleColor(style.heading, '#ffffff');
   const textColor = resolveStyleColor(style.text, 'var(--theme-secondary)');
 
+  const targetOptions = allSections.filter((s) => s.id !== instance.id);
+  const targetInstance = allSections.find((s) => s.id === data.ctaTargetId);
+  const ctaHref = targetInstance ? `#${targetInstance.type}` : undefined;
+
   return (
     <section
       id="hero"
-      className={`relative w-full min-h-[70vh] flex items-center justify-center overflow-hidden ${editMode ? 'edit-mode-section-outline' : ''}`}
+      className={`relative w-full min-h-[70vh] flex items-center justify-center overflow-hidden rounded-[var(--radius-lg)] shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-accent)') }}
     >
       {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
@@ -85,7 +93,7 @@ export default function HeroSection({
         </p>
 
         <Button
-          href="#how-to-order"
+          href={ctaHref}
           onClick={(e) => {
             if (editMode) e.preventDefault();
           }}
@@ -109,6 +117,34 @@ export default function HeroSection({
             className="text-white"
           />
         </Button>
+
+        {editMode && (
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <span className="text-xs" style={{ color: textColor }}>
+              Links to:
+            </span>
+            <Select
+              size="small"
+              value={data.ctaTargetId}
+              onChange={(e) => onContentChange({ ctaTargetId: e.target.value })}
+              displayEmpty
+              sx={{
+                fontSize: 13,
+                bgcolor: 'rgba(255,255,255,0.9)',
+                minWidth: 160,
+              }}
+            >
+              <MenuItem value="">
+                <em>None</em>
+              </MenuItem>
+              {targetOptions.map((s) => (
+                <MenuItem key={s.id} value={s.id}>
+                  {getInstanceLabel(s, allSections)}
+                </MenuItem>
+              ))}
+            </Select>
+          </div>
+        )}
       </div>
     </section>
   );

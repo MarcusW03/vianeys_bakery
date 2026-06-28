@@ -499,6 +499,13 @@ export default function Sidebar({ config, adminName }: SidebarProps) {
   // Width comes from the --sidebar-width CSS var (set once in globals.css as a
   // clamp(), not pinned here in JS) so it scales fluidly with the viewport
   // instead of jumping between fixed px values.
+  //
+  // Floating glass card: inset on all sides by --page-gutter (top/bottom/left
+  // here; the temporary/mobile Drawer below adds `right` too since it isn't
+  // anchored to the viewport edge the way the permanent one's reserved flex
+  // space is). Rounded on every corner and given a translucent, theme-driven
+  // background instead of the old flush/opaque panel — no backdrop-filter
+  // blur, just the tint + radius + elevated shadow reading as "glass".
   const drawerSx = {
     '& .MuiDrawer-paper': {
       width: 'var(--sidebar-width)',
@@ -507,14 +514,12 @@ export default function Sidebar({ config, adminName }: SidebarProps) {
       flexDirection: 'column' as const,
       overflow: 'hidden',
       border: 'none',
-      // Theme-aware background applied via className on the inner content wrapper
-      // but MUI paper needs background too:
-      background: 'color-mix(in srgb, var(--theme-secondary) 55%, white 45%)',
-      boxShadow: 'var(--shadow-md)',
-      borderRight: '1px solid color-mix(in srgb, var(--theme-primary) 18%, transparent)',
-      // No corner radius on the right edge — the sidebar sits flush against
-      // page content there, so rounding it left a visible gap (page
-      // background peeking through) between the curve and the content edge.
+      borderRadius: 'var(--radius-lg)',
+      top: 'var(--page-gutter)',
+      bottom: 'var(--page-gutter)',
+      left: 'var(--page-gutter)',
+      background: 'color-mix(in srgb, var(--theme-secondary) 45%, transparent)',
+      boxShadow: 'var(--shadow-lg)',
     },
   };
 
@@ -554,7 +559,7 @@ export default function Sidebar({ config, adminName }: SidebarProps) {
           ...drawerSx,
         }}
       >
-        <div className="flex flex-col h-full" style={{ background: 'color-mix(in srgb, var(--theme-secondary) 55%, white 45%)' }}>
+        <div className="flex flex-col h-full">
           {/* Close button */}
           <div className="flex justify-end px-2 pt-2">
             <IconButton
@@ -579,12 +584,17 @@ export default function Sidebar({ config, adminName }: SidebarProps) {
         anchor="left"
         sx={{
           display: { xs: 'none', md: 'block' },
-          width: 'var(--sidebar-width)',
+          // Reserve sidebar width *plus* the floating gutter so `<main>`
+          // (a sibling in the flex row) clears the inset/floating Paper with
+          // a matching gap on both sides — the Paper itself stays
+          // `var(--sidebar-width)` wide and insets by --page-gutter via
+          // drawerSx's top/left/bottom, this just reserves the extra space.
+          width: 'calc(var(--sidebar-width) + var(--page-gutter))',
           flexShrink: 0,
           ...drawerSx,
         }}
       >
-        <div className="flex flex-col h-full" style={{ background: 'color-mix(in srgb, var(--theme-secondary) 55%, white 45%)' }}>
+        <div className="flex flex-col h-full">
           <NavContent config={config} adminName={adminName} />
         </div>
       </Drawer>

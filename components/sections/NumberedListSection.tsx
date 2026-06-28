@@ -2,7 +2,9 @@
 
 import EditableText from '@/components/admin/EditableText';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
-import type { NumberedListContent } from '@/lib/config/types';
+import AddTileCard from '@/components/sections/shared/AddTileCard';
+import RemoveIconButton from '@/components/sections/shared/RemoveIconButton';
+import type { NumberedListContent, NumberedListItem } from '@/lib/config/types';
 import { resolveStyleColor } from '@/lib/config/section-background';
 import type { SectionRendererProps } from '@/lib/sections/registry';
 
@@ -16,10 +18,29 @@ export default function NumberedListSection({
   const headingColor = resolveStyleColor(style.heading, 'var(--theme-accent)');
   const textColor = resolveStyleColor(style.text, '#4b5563');
 
+  const addStep = () => {
+    const newStep: NumberedListItem = {
+      id: `step-${Date.now()}`,
+      stepNumber: steps.length + 1,
+      title: 'New Step',
+      description: 'Add a description',
+    };
+    onContentChange({ steps: [...steps, newStep] });
+  };
+
+  // Re-numbers the remaining steps so they stay sequential (1, 2, 3...)
+  // instead of leaving a gap where the removed step used to be.
+  const removeStep = (id: string) => {
+    const renumbered = steps
+      .filter((s) => s.id !== id)
+      .map((s, idx) => ({ ...s, stepNumber: idx + 1 }));
+    onContentChange({ steps: renumbered });
+  };
+
   return (
     <section
       id="numbered-list"
-      className={`py-20 px-6 ${editMode ? 'edit-mode-section-outline' : ''}`}
+      className={`py-20 px-6 rounded-[var(--radius-lg)] overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-secondary)') }}
     >
       {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
@@ -34,7 +55,8 @@ export default function NumberedListSection({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
           {steps.map((step, i) => (
-            <div key={step.id} className="flex gap-4">
+            <div key={step.id} className="relative flex gap-4 group">
+              {editMode && <RemoveIconButton onClick={() => removeStep(step.id)} ariaLabel="Remove step" />}
               {/* Step number badge */}
               <div
                 className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg text-white"
@@ -72,6 +94,10 @@ export default function NumberedListSection({
               </div>
             </div>
           ))}
+
+          {editMode && (
+            <AddTileCard onClick={addStep} ariaLabel="Add step" sx={{ minHeight: 80 }} />
+          )}
         </div>
       </div>
     </section>

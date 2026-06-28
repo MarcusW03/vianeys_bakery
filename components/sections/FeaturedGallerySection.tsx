@@ -37,7 +37,7 @@ export default function FeaturedGallerySection({
   return (
     <section
       id="featured-gallery"
-      className={`py-20 px-6 ${editMode ? 'edit-mode-section-outline' : ''}`}
+      className={`py-20 px-6 rounded-[var(--radius-lg)] overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-secondary)') }}
     >
       {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}

@@ -49,11 +49,22 @@ export default function PageSections({ initialConfig, adminName }: PageSectionsP
         MUI's permanent Drawer renders a `flex: 0 0 auto` wrapper div around
         the (visually fixed-position) Paper — that wrapper takes up real
         space in this flex row, so it already pushes `main` over by exactly
-        var(--sidebar-width) on its own. Do NOT also add a marginLeft/offset
+        calc(var(--sidebar-width) + var(--page-gutter)) on its own (Sidebar.tsx
+        reserves that extra gutter so main clears the floating/inset Paper
+        with a matching gap on both sides). Do NOT also add a marginLeft/offset
         class here — that double-counts the width and creates a huge gap.
         On mobile the sidebar's wrapper is hidden (width 0), so main is full width.
       */}
-      <main style={{ flex: 1 }} className="w-full">
+      <main
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--page-gutter)',
+          padding: 'var(--page-gutter)',
+        }}
+        className="w-full"
+      >
         {config.sections.map((instance) => {
           if (!editMode && instance.hidden) return null;
           const def = SECTION_REGISTRY[instance.type];
@@ -64,6 +75,7 @@ export default function PageSections({ initialConfig, adminName }: PageSectionsP
               instance={instance}
               editMode={editMode}
               onContentChange={(patch) => updateSectionContent(instance.id, patch)}
+              allSections={config.sections}
             />
           );
         })}

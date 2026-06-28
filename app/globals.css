@@ -15,6 +15,11 @@
   --sidebar-width: clamp(200px, 16vw, 240px);
   --sidebar-width-mobile: 100vw;
 
+  /* Single spacing value behind the floating-card look: insets the sidebar
+     off the page edges and separates each stacked section-card so the page
+     background shows through between them. */
+  --page-gutter: clamp(10px, 1.5vw, 20px);
+
   /* Design tokens for a softer, more modern feel */
   --radius-sm: 8px;
   --radius-md: 14px;
@@ -110,5 +115,6 @@ html {
   position: relative;
   outline: 2px dashed color-mix(in srgb, var(--theme-primary) 55%, transparent);
   outline-offset: -2px;
+  border-radius: inherit;
 }
 

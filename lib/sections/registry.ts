@@ -22,6 +22,10 @@ export interface SectionRendererProps<TContent = unknown> {
   instance: SectionInstance<TContent>;
   editMode: boolean;
   onContentChange: (patch: Partial<TContent>) => void;
+  /** Every section instance on the page, in order — for renderers (e.g. Hero's
+   * CTA target picker) that need to reference a sibling section by id rather
+   * than reaching into AdminContext directly. */
+  allSections: SectionInstance[];
 }
 
 export interface SectionDefinition<TContent = unknown> {
@@ -50,6 +54,8 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition<any>> = {
       subtext: 'Custom cakes and pastries for every occasion. Made to order, made for you.',
       ctaText: 'How to order',
       imageUrl: '',
+      // Matches defaults.ts's `${type}-1` id convention for the default page.
+      ctaTargetId: 'numbered-list-1',
     } satisfies HeroContent,
     defaultStyle: { background: 'color3', heading: '#ffffff', text: '#1c1c1c' },
     Renderer: HeroSection,

@@ -37,7 +37,7 @@ export default function CardGridSection({
   return (
     <section
       id="card-grid"
-      className={`py-20 px-6 ${editMode ? 'edit-mode-section-outline' : ''}`}
+      className={`py-20 px-6 rounded-[var(--radius-lg)] overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-secondary)') }}
     >
       {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
@@ -58,13 +58,16 @@ export default function CardGridSection({
               className="group"
               sx={{
                 position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
                 borderColor: 'color-mix(in srgb, var(--theme-secondary) 80%, transparent)',
                 '&:hover': { boxShadow: 2 },
               }}
             >
               {editMode && <RemoveIconButton onClick={() => removeItem(item.id)} ariaLabel="Remove item" />}
 
-              <CardContent>
+              <CardContent sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                 <h3 className="text-xl font-semibold mb-2" style={{ color: headingColor }}>
                   <EditableText
                     value={item.title}
@@ -92,9 +95,13 @@ export default function CardGridSection({
                   />
                 </p>
 
+                {/* mt-auto pins the badge to the card's bottom edge regardless
+                    of how long the description above it runs, so badges line
+                    up across a row instead of trailing the longest card. */}
                 <span
-                  className="inline-block font-semibold px-4 py-1 rounded-full text-sm"
+                  className="inline-block font-semibold px-4 py-1 rounded-full text-sm self-start"
                   style={{
+                    marginTop: 'auto',
                     backgroundColor: 'color-mix(in srgb, var(--theme-secondary) 70%, white)',
                     color: 'var(--theme-primary)',
                   }}

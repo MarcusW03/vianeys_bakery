@@ -29,6 +29,9 @@ export interface HeroContent {
   subtext: string;
   ctaText: string;
   imageUrl: string;
+  /** Instance id (SectionInstance.id) of the section the CTA button scrolls
+   * to — not a type or hardcoded anchor, since sections are dynamic instances. */
+  ctaTargetId: string;
 }
 
 export interface FeaturedGalleryContent {
