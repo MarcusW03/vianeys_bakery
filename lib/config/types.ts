@@ -82,10 +82,17 @@ export interface SiteTheme {
 // primaryColor/secondaryColor/accentColor); any other string is a literal hex
 // the admin picked with the custom color picker for that one spot.
 export type ColorSlot = 'color1' | 'color2' | 'color3';
+// "radius-sm/md/lg" reference the site's --radius-* scale; any other string is
+// a literal CSS value (e.g. "8px") the admin picked as a custom radius.
+export type RadiusSlot = 'radius-sm' | 'radius-md' | 'radius-lg';
 export interface SectionStyle {
   background: ColorSlot | string;
   heading: ColorSlot | string;
   text: ColorSlot | string;
+  borderRadius?: RadiusSlot | string;
+  /** When set, layers over (and visually replaces) `background` as the
+   * section's backdrop — the color still applies underneath/around it. */
+  backgroundImageUrl?: string;
 }
 
 // One entry per section INSTANCE on the page. `id` is stable and independent

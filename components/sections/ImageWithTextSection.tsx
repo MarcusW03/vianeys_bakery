@@ -5,7 +5,7 @@ import EditableText from '@/components/admin/EditableText';
 import EditableImage from '@/components/admin/EditableImage';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
 import type { ImageWithTextContent } from '@/lib/config/types';
-import { resolveStyleColor } from '@/lib/config/section-background';
+import { resolveStyleColor, resolveStyleRadius, resolveBackgroundLayer } from '@/lib/config/section-background';
 import { getSectionAnchorId } from '@/lib/sections/registry';
 import type { SectionRendererProps } from '@/lib/sections/registry';
 
@@ -23,8 +23,11 @@ export default function ImageWithTextSection({
   return (
     <section
       id={getSectionAnchorId(instance, allSections)}
-      className={`py-20 px-6 rounded-[var(--radius-md)] overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
-      style={{ backgroundColor: resolveStyleColor(style.background, '#ffffff') }}
+      className={`py-20 px-6 overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
+      style={{
+        ...resolveBackgroundLayer(style, '#ffffff'),
+        borderRadius: resolveStyleRadius(style.borderRadius, 'var(--radius-md)'),
+      }}
     >
       {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
       <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">

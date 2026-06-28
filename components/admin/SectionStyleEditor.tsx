@@ -2,12 +2,17 @@
 
 import { useState, useRef, useEffect } from 'react';
 import IconButton from '@mui/material/IconButton';
+import Button from '@mui/material/Button';
 import PaletteIcon from '@mui/icons-material/Palette';
+import CloseIcon from '@mui/icons-material/Close';
 import { useAdmin } from '@/lib/admin-context';
-import { COLOR_SLOTS } from '@/lib/config/section-background';
+import { COLOR_SLOTS, RADIUS_SLOTS } from '@/lib/config/section-background';
 import type { SectionStyle } from '@/lib/config/types';
+import ImagePicker from './ImagePicker';
 
-const ROWS: { key: keyof SectionStyle; label: string }[] = [
+type ColorStyleKey = 'background' | 'heading' | 'text';
+
+const ROWS: { key: ColorStyleKey; label: string }[] = [
   { key: 'background', label: 'Background' },
   { key: 'heading', label: 'Title / Subtitles' },
   { key: 'text', label: 'Paragraph Text' },
@@ -18,8 +23,9 @@ function isCustomValue(value: string): boolean {
 }
 
 /** Small corner widget (edit mode only) that lets the admin restyle a single
- * section's background/heading/text colors without scrolling through a
- * sidebar list. Anchors to the section's own relative-positioned root. */
+ * section's background/heading/text colors, corner radius, and background
+ * image without scrolling through a sidebar list. Anchors to the section's
+ * own relative-positioned root. */
 export default function SectionStyleEditor({
   instanceId,
   style,
@@ -29,6 +35,7 @@ export default function SectionStyleEditor({
 }) {
   const { updateSectionStyle } = useAdmin();
   const [open, setOpen] = useState(false);
+  const [imagePickerOpen, setImagePickerOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,12 +49,14 @@ export default function SectionStyleEditor({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
+  const currentRadius = style.borderRadius ?? 'radius-md';
+
   return (
     <div ref={panelRef} className="absolute top-3 right-3 z-40" style={{ pointerEvents: 'auto' }}>
       <IconButton
         size="small"
         onClick={() => setOpen((o) => !o)}
-        aria-label="Edit section colors"
+        aria-label="Edit section style"
         sx={{
           background: 'rgba(255,255,255,0.92)',
           boxShadow: 'var(--shadow-sm)',
@@ -115,8 +124,76 @@ export default function SectionStyleEditor({
               </div>
             );
           })}
+
+          {/* ── Corner Radius ── */}
+          <div className="mb-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
+              Corner Radius
+            </p>
+            <div className="flex items-center gap-1.5">
+              {RADIUS_SLOTS.map(({ slot, label }) => (
+                <button
+                  key={slot}
+                  title={label}
+                  onClick={() => updateSectionStyle(instanceId, { borderRadius: slot })}
+                  className="flex-1 h-6 text-[10px] font-semibold"
+                  style={{
+                    borderRadius:
+                      slot === 'radius-sm' ? 'var(--radius-sm)' : slot === 'radius-md' ? 'var(--radius-md)' : 'var(--radius-lg)',
+                    background: currentRadius === slot ? '#1a1a1a' : 'rgba(0,0,0,0.06)',
+                    color: currentRadius === slot ? 'white' : '#1a1a1a',
+                    border: 'none',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Background Image ── */}
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
+              Background Image
+            </p>
+            {style.backgroundImageUrl ? (
+              <div className="flex items-center gap-1.5">
+                <div
+                  className="w-9 h-9 rounded-[var(--radius-sm)] flex-shrink-0 bg-cover bg-center border"
+                  style={{
+                    backgroundImage: `url(${style.backgroundImageUrl})`,
+                    borderColor: 'rgba(0,0,0,0.15)',
+                  }}
+                />
+                <Button size="small" onClick={() => setImagePickerOpen(true)}>
+                  Change
+                </Button>
+                <IconButton
+                  size="small"
+                  aria-label="Remove background image"
+                  onClick={() => updateSectionStyle(instanceId, { backgroundImageUrl: undefined })}
+                >
+                  <CloseIcon sx={{ fontSize: 14 }} />
+                </IconButton>
+              </div>
+            ) : (
+              <Button size="small" variant="outlined" onClick={() => setImagePickerOpen(true)}>
+                Choose Image
+              </Button>
+            )}
+          </div>
         </div>
       )}
+
+      <ImagePicker
+        open={imagePickerOpen}
+        onClose={() => setImagePickerOpen(false)}
+        onSelect={(url) => {
+          updateSectionStyle(instanceId, { backgroundImageUrl: url });
+          setImagePickerOpen(false);
+        }}
+        mode="pick"
+      />
     </div>
   );
 }

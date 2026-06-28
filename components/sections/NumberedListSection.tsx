@@ -5,7 +5,7 @@ import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
 import AddTileCard from '@/components/sections/shared/AddTileCard';
 import RemoveIconButton from '@/components/sections/shared/RemoveIconButton';
 import type { NumberedListContent, NumberedListItem } from '@/lib/config/types';
-import { resolveStyleColor } from '@/lib/config/section-background';
+import { resolveStyleColor, resolveStyleRadius, resolveBackgroundLayer } from '@/lib/config/section-background';
 import { getSectionAnchorId } from '@/lib/sections/registry';
 import type { SectionRendererProps } from '@/lib/sections/registry';
 
@@ -42,8 +42,11 @@ export default function NumberedListSection({
   return (
     <section
       id={getSectionAnchorId(instance, allSections)}
-      className={`py-20 px-6 rounded-[var(--radius-md)] overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
-      style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-secondary)') }}
+      className={`py-20 px-6 overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
+      style={{
+        ...resolveBackgroundLayer(style, 'var(--theme-secondary)'),
+        borderRadius: resolveStyleRadius(style.borderRadius, 'var(--radius-md)'),
+      }}
     >
       {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
       <div className="max-w-4xl mx-auto">

@@ -8,7 +8,7 @@ import EditableText from '@/components/admin/EditableText';
 import EditableImage from '@/components/admin/EditableImage';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
 import type { HeroContent } from '@/lib/config/types';
-import { resolveStyleColor } from '@/lib/config/section-background';
+import { resolveStyleColor, resolveStyleRadius, resolveBackgroundLayer } from '@/lib/config/section-background';
 import { getInstanceLabel, getSectionAnchorId } from '@/lib/sections/registry';
 import type { SectionRendererProps } from '@/lib/sections/registry';
 
@@ -30,8 +30,11 @@ export default function HeroSection({
   return (
     <section
       id={getSectionAnchorId(instance, allSections)}
-      className={`relative w-full min-h-[70vh] flex items-center justify-center overflow-hidden rounded-[var(--radius-md)] shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
-      style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-accent)') }}
+      className={`relative w-full min-h-[70vh] flex items-center justify-center overflow-hidden shadow-[var(--shadow-md)] ${editMode ? 'edit-mode-section-outline' : ''}`}
+      style={{
+        ...resolveBackgroundLayer(style, 'var(--theme-accent)'),
+        borderRadius: resolveStyleRadius(style.borderRadius, 'var(--radius-md)'),
+      }}
     >
       {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
       {/* Background image or gradient */}
