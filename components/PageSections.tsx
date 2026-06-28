@@ -30,9 +30,12 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType<any>> = {
 };
 
 export default function PageSections({ initialConfig, adminName }: PageSectionsProps) {
-  const { editMode, workingConfig } = useAdmin();
+  const { editMode, workingConfig, lastSavedConfig } = useAdmin();
   const { setThemeColors } = useThemeColors();
-  const config = editMode && workingConfig ? workingConfig : initialConfig;
+  // Prefer (in order): live edits, the config from the last successful save
+  // (so Save doesn't visually "lose" the change while router.refresh()'s
+  // server round-trip is still in flight), then the server-rendered prop.
+  const config = editMode && workingConfig ? workingConfig : lastSavedConfig ?? initialConfig;
   const order = config.sectionOrder ?? [
     'hero', 'featured', 'gallery', 'pricing', 'how-to-order', 'about', 'contact',
   ];

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -45,9 +45,11 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState<GalleryCategory | null>(null);
   const [galleryRows, setGalleryRows] = useState(2);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
 
-  // Responsive row count for the customer-view scroll grid: 1 row on mobile,
-  // 2 on tablet, 3 on desktop. Recomputed on resize, not just on mount.
+  // Responsive row count for the customer-view grid: 1 row on mobile, 2 on
+  // tablet, 3 on desktop. Recomputed on resize, not just on mount.
   useEffect(() => {
     const computeRows = () => {
       const width = window.innerWidth;
@@ -59,6 +61,16 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
     update();
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
+  }, []);
+
+  // Measure available width so the grid knows how many columns fit per row
+  // before it needs to wrap (or, past capacity, scroll instead).
+  useEffect(() => {
+    const el = gridContainerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => setContainerWidth(entry.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   // Reset active tab + close lightbox when categories change
@@ -255,54 +267,104 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto scroll-hidden pb-3 -mx-6 px-6">
+          <div
+            ref={gridContainerRef}
+            className="overflow-x-auto scroll-hidden pb-3 -mx-6 px-6"
+          >
             {currentImages.length === 0 ? (
               <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
                 No images in this category yet.
               </Typography>
             ) : (
-              /*
-               * CSS grid with gridAutoFlow:column fills down first, then right.
-               * gridTemplateRows sets how many rows tall the grid is — capped to
-               * the number of images so a single image doesn't reserve empty
-               * rows beneath it. Outer flex wrapper centers the grid when it's
-               * narrower than the viewport, and scrolls when it's wider.
-               */
-              <div
-                className="flex justify-center"
-                style={{ width: 'max-content', minWidth: '100%' }}
-              >
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateRows: `repeat(${Math.max(1, Math.min(galleryRows, currentImages.length))}, ${CELL}px)`,
-                    gridAutoFlow: 'column',
-                    gridAutoColumns: `${CELL}px`,
-                    gap: 12,
-                  }}
-                >
-                  {currentImages.map((img, i) => (
+              (() => {
+                const GAP = 12;
+                // How many CELL-sized columns fit in the measured width — falls
+                // back to 3 before the ResizeObserver's first measurement lands.
+                const colsPerRow =
+                  containerWidth > 0
+                    ? Math.max(1, Math.floor((containerWidth + GAP) / (CELL + GAP)))
+                    : 3;
+                const capacity = colsPerRow * galleryRows;
+                const needsScroll = currentImages.length > capacity;
+
+                if (!needsScroll) {
+                  // Fits within the row/column capacity: fill left-to-right,
+                  // wrap downward (up to galleryRows), centered — no scrolling.
+                  const cols = Math.min(colsPerRow, currentImages.length);
+                  return (
+                    <div className="flex justify-center">
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: `repeat(${cols}, ${CELL}px)`,
+                          gridAutoFlow: 'row',
+                          gap: GAP,
+                        }}
+                      >
+                        {currentImages.map((img, i) => (
+                          <div
+                            key={img.id}
+                            className="relative rounded-[var(--radius-md)] overflow-hidden cursor-pointer group"
+                            style={{ width: CELL, height: CELL }}
+                            onClick={() => {
+                              setLightboxIndex(i);
+                              setLightboxOpen(true);
+                            }}
+                          >
+                            <Image
+                              src={img.url}
+                              alt={img.alt || `Gallery ${i + 1}`}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              sizes={`(max-width: 768px) 90vw, ${CELL}px`}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Past capacity: switch to filling columns first (galleryRows
+                // tall) and let the row scroll horizontally for the overflow.
+                return (
+                  <div
+                    className="flex justify-center"
+                    style={{ width: 'max-content', minWidth: '100%' }}
+                  >
                     <div
-                      key={img.id}
-                      // relative is REQUIRED for next/image fill
-                      className="relative rounded-[var(--radius-md)] overflow-hidden cursor-pointer group"
-                      style={{ width: CELL, height: CELL }}
-                      onClick={() => {
-                        setLightboxIndex(i);
-                        setLightboxOpen(true);
+                      style={{
+                        display: 'grid',
+                        gridTemplateRows: `repeat(${galleryRows}, ${CELL}px)`,
+                        gridAutoFlow: 'column',
+                        gridAutoColumns: `${CELL}px`,
+                        gap: GAP,
                       }}
                     >
-                      <Image
-                        src={img.url}
-                        alt={img.alt || `Gallery ${i + 1}`}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        sizes={`(max-width: 768px) 90vw, ${CELL}px`}
-                      />
+                      {currentImages.map((img, i) => (
+                        <div
+                          key={img.id}
+                          // relative is REQUIRED for next/image fill
+                          className="relative rounded-[var(--radius-md)] overflow-hidden cursor-pointer group"
+                          style={{ width: CELL, height: CELL }}
+                          onClick={() => {
+                            setLightboxIndex(i);
+                            setLightboxOpen(true);
+                          }}
+                        >
+                          <Image
+                            src={img.url}
+                            alt={img.alt || `Gallery ${i + 1}`}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            sizes={`(max-width: 768px) 90vw, ${CELL}px`}
+                          />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                );
+              })()
             )}
           </div>
         )}

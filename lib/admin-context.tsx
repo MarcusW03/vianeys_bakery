@@ -20,6 +20,11 @@ interface AdminContextValue {
   adminName?: string;
   editMode: boolean;
   workingConfig: SiteConfig | null;
+  /** The config as of the last successful save, kept around so the page can
+   * keep displaying it immediately after exiting edit mode — without
+   * waiting on a server round-trip (router.refresh()) that may briefly lag
+   * behind the write, e.g. due to CDN/edge propagation. */
+  lastSavedConfig: SiteConfig | null;
   isSaving: boolean;
   /** Non-null when enterEditMode fetch fails */
   editModeError: string | null;
@@ -60,6 +65,7 @@ export function AdminProvider({
 }) {
   const [editMode, setEditMode] = useState(false);
   const [workingConfig, setWorkingConfig] = useState<SiteConfig | null>(null);
+  const [lastSavedConfig, setLastSavedConfig] = useState<SiteConfig | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [editModeError, setEditModeError] = useState<string | null>(null);
 
@@ -249,6 +255,9 @@ export function AdminProvider({
         const data = await res.json().catch(() => ({}));
         return { ok: false, error: (data as { error?: string }).error ?? 'Save failed' };
       }
+      // Keep the just-saved data displayable immediately — don't wait on
+      // router.refresh()'s server round-trip, which can lag behind the write.
+      setLastSavedConfig(workingConfig);
       return { ok: true };
     } catch {
       return { ok: false, error: 'Network error — check your connection and try again.' };
@@ -268,6 +277,7 @@ export function AdminProvider({
         adminName,
         editMode,
         workingConfig,
+        lastSavedConfig,
         isSaving,
         editModeError,
         enterEditMode,
