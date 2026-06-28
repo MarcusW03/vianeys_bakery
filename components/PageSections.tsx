@@ -3,15 +3,8 @@
 import { useEffect } from 'react';
 import { useAdmin } from '@/lib/admin-context';
 import { useThemeColors } from '@/components/DynamicThemeProvider';
-import { DEFAULT_SECTION_STYLE } from '@/lib/config/section-background';
 import type { SiteConfig } from '@/lib/config/types';
-import HeroSection from '@/components/sections/HeroSection';
-import FeaturedGallery from '@/components/sections/FeaturedGallery';
-import GallerySection from '@/components/sections/GallerySection';
-import PricingSection from '@/components/sections/PricingSection';
-import HowToOrderSection from '@/components/sections/HowToOrderSection';
-import AboutSection from '@/components/sections/AboutSection';
-import ContactSection from '@/components/sections/ContactSection';
+import { SECTION_REGISTRY } from '@/lib/sections/registry';
 import Sidebar from '@/components/admin/Sidebar';
 
 interface PageSectionsProps {
@@ -19,27 +12,13 @@ interface PageSectionsProps {
   adminName?: string;
 }
 
-const SECTION_COMPONENTS: Record<string, React.ComponentType<any>> = {
-  hero: HeroSection,
-  featured: FeaturedGallery,
-  gallery: GallerySection,
-  pricing: PricingSection,
-  'how-to-order': HowToOrderSection,
-  about: AboutSection,
-  contact: ContactSection,
-};
-
 export default function PageSections({ initialConfig, adminName }: PageSectionsProps) {
-  const { editMode, workingConfig, lastSavedConfig } = useAdmin();
+  const { editMode, workingConfig, lastSavedConfig, updateSectionContent } = useAdmin();
   const { setThemeColors } = useThemeColors();
   // Prefer (in order): live edits, the config from the last successful save
   // (so Save doesn't visually "lose" the change while router.refresh()'s
   // server round-trip is still in flight), then the server-rendered prop.
   const config = editMode && workingConfig ? workingConfig : lastSavedConfig ?? initialConfig;
-  const order = config.sectionOrder ?? [
-    'hero', 'featured', 'gallery', 'pricing', 'how-to-order', 'about', 'contact',
-  ];
-  const hidden = config.hiddenSections ?? [];
 
   // ── Apply theme CSS variables on every config change ──────────────────────
   // This runs both on mount (from server config) and whenever the admin
@@ -60,38 +39,6 @@ export default function PageSections({ initialConfig, adminName }: PageSectionsP
     });
   }, [config.theme]);
 
-  const styleFor = (sectionId: string) => config.sectionStyles?.[sectionId] ?? DEFAULT_SECTION_STYLE;
-
-  const sectionProps: Record<string, Record<string, unknown>> = {
-    hero: { data: config.hero, sectionStyle: styleFor('hero') },
-    featured: {
-      imageUrls: config.featuredImageUrls,
-      sectionTitle: config.sectionTitles?.featured ?? 'Our Work',
-      sectionStyle: styleFor('featured'),
-    },
-    gallery: {
-      categories: config.gallery.categories,
-      sectionTitle: config.sectionTitles?.gallery ?? 'Gallery',
-      sectionStyle: styleFor('gallery'),
-    },
-    pricing: {
-      headline: config.pricing.headline,
-      items: config.pricing.items,
-      sectionStyle: styleFor('pricing'),
-    },
-    'how-to-order': {
-      headline: config.howToOrder.headline,
-      steps: config.howToOrder.steps,
-      sectionStyle: styleFor('how-to-order'),
-    },
-    about: { data: config.about, sectionStyle: styleFor('about') },
-    contact: {
-      data: config.contact,
-      sectionTitle: config.sectionTitles?.contact ?? 'Get in Touch',
-      sectionStyle: styleFor('contact'),
-    },
-  };
-
   return (
     // Flex row: sidebar + main content side by side on desktop.
     // On mobile the sidebar is a temporary overlay, so main takes full width.
@@ -107,11 +54,18 @@ export default function PageSections({ initialConfig, adminName }: PageSectionsP
         On mobile the sidebar's wrapper is hidden (width 0), so main is full width.
       */}
       <main style={{ flex: 1 }} className="w-full">
-        {order.map((sectionId) => {
-          if (!editMode && hidden.includes(sectionId)) return null;
-          const Component = SECTION_COMPONENTS[sectionId];
-          if (!Component) return null;
-          return <Component key={sectionId} {...sectionProps[sectionId]} />;
+        {config.sections.map((instance) => {
+          if (!editMode && instance.hidden) return null;
+          const def = SECTION_REGISTRY[instance.type];
+          if (!def) return null;
+          return (
+            <def.Renderer
+              key={instance.id}
+              instance={instance}
+              editMode={editMode}
+              onContentChange={(patch) => updateSectionContent(instance.id, patch)}
+            />
+          );
         })}
       </main>
     </div>

@@ -32,6 +32,26 @@ export interface HeroContent {
   imageUrl: string;
 }
 
+export interface FeaturedContent {
+  imageUrls: string[];
+  sectionTitle: string;
+}
+
+export interface GalleryContent {
+  categories: GalleryCategory[];
+  sectionTitle: string;
+}
+
+export interface PricingContent {
+  headline: string;
+  items: PricingItem[];
+}
+
+export interface HowToOrderContent {
+  headline: string;
+  steps: OrderStep[];
+}
+
 export interface AboutContent {
   headline: string;
   body: string;
@@ -44,9 +64,10 @@ export interface ContactLink {
   url: string;
 }
 
-export interface ContactContent {
+export interface ContactSectionContent {
   links: ContactLink[];
   location: string;
+  sectionTitle: string;
 }
 
 export interface SiteTheme {
@@ -64,35 +85,21 @@ export interface SectionStyle {
   heading: ColorSlot | string;
   text: ColorSlot | string;
 }
-export type SectionStyles = Record<string, SectionStyle>;
+
+// One entry per section INSTANCE on the page. `id` is stable and independent
+// of `type` — two Gallery instances are two different ids of type 'gallery'.
+// `type` looks up the SectionDefinition in lib/sections/registry.ts.
+export interface SectionInstance<TContent = unknown> {
+  id: string;
+  type: string;
+  content: TContent;
+  style: SectionStyle;
+  hidden?: boolean;
+}
 
 export interface SiteConfig {
   siteName: string;
-  hero: HeroContent;
-  featuredImageUrls: string[];
-  gallery: {
-    categories: GalleryCategory[];
-  };
-  pricing: {
-    headline: string;
-    items: PricingItem[];
-  };
-  howToOrder: {
-    headline: string;
-    steps: OrderStep[];
-  };
-  about: AboutContent;
-  contact: ContactContent;
-  sectionTitles: {
-    featured: string;
-    gallery: string;
-    contact: string;
-  };
   theme: SiteTheme;
-  sectionStyles?: SectionStyles;
-  sectionOrder?: string[];
-  hiddenSections?: string[];
+  sections: SectionInstance[];
   lastUpdated: string;
 }
-
-export const SECTION_IDS = ['hero', 'featured', 'gallery', 'pricing', 'how-to-order', 'about', 'contact'] as const;

@@ -13,32 +13,24 @@ import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
-import { useAdmin } from '@/lib/admin-context';
 import EditableImage from '@/components/admin/EditableImage';
 import EditableText from '@/components/admin/EditableText';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
-import { resolveStyleColor, DEFAULT_SECTION_STYLE } from '@/lib/config/section-background';
-import type { GalleryCategory, GalleryImage, SectionStyle } from '@/lib/config/types';
-
-interface GallerySectionProps {
-  categories: GalleryCategory[];
-  sectionTitle: string;
-  sectionStyle?: SectionStyle;
-}
+import { resolveStyleColor } from '@/lib/config/section-background';
+import type { GalleryCategory, GalleryImage, GalleryContent } from '@/lib/config/types';
+import type { SectionRendererProps } from '@/lib/sections/registry';
 
 // Cell size in px — shared between desktop and mobile so math is consistent
 const CELL = 200;
 
-export default function GallerySection({ categories, sectionTitle, sectionStyle }: GallerySectionProps) {
-  const style = sectionStyle ?? DEFAULT_SECTION_STYLE;
+export default function GallerySection({
+  instance,
+  editMode,
+  onContentChange,
+}: SectionRendererProps<GalleryContent>) {
+  const { categories, sectionTitle } = instance.content;
+  const style = instance.style;
   const headingColor = resolveStyleColor(style.heading, 'var(--theme-accent)');
-  const {
-    editMode,
-    updateGalleryCategory,
-    updateSectionTitles,
-    addGalleryCategory,
-    removeGalleryCategory,
-  } = useAdmin();
 
   const [activeTab, setActiveTab] = useState<string>('all');
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -47,6 +39,21 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
   const [galleryRows, setGalleryRows] = useState(2);
   const [containerWidth, setContainerWidth] = useState(0);
   const gridContainerRef = useRef<HTMLDivElement>(null);
+
+  const updateCategory = (categoryId: string, patch: Partial<GalleryCategory>) => {
+    onContentChange({
+      categories: categories.map((c) => (c.id === categoryId ? { ...c, ...patch } : c)),
+    });
+  };
+
+  const addCategory = () => {
+    const newCat: GalleryCategory = { id: `cat-${Date.now()}`, name: 'New Category', images: [] };
+    onContentChange({ categories: [...categories, newCat] });
+  };
+
+  const removeCategory = (id: string) => {
+    onContentChange({ categories: categories.filter((c) => c.id !== id) });
+  };
 
   // Responsive row count for the customer-view grid: 1 row on mobile, 2 on
   // tablet, 3 on desktop. Recomputed on resize, not just on mount.
@@ -101,7 +108,7 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
     const updated: GalleryImage[] = activeCategory.images.map((img, i) =>
       i === imgIndex ? { ...img, url } : img,
     );
-    updateGalleryCategory(activeCategory.id, { images: updated });
+    updateCategory(activeCategory.id, { images: updated });
   };
 
   const handleAddImage = () => {
@@ -112,14 +119,14 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
       alt: '',
       featured: false,
     };
-    updateGalleryCategory(activeCategory.id, {
+    updateCategory(activeCategory.id, {
       images: [...activeCategory.images, newImg],
     });
   };
 
   const handleRemoveImage = (imgIndex: number) => {
     if (!activeCategory) return;
-    updateGalleryCategory(activeCategory.id, {
+    updateCategory(activeCategory.id, {
       images: activeCategory.images.filter((_, i) => i !== imgIndex),
     });
   };
@@ -128,7 +135,7 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
     if (cat.images.length > 0) {
       setDeleteConfirm(cat);
     } else {
-      removeGalleryCategory(cat.id);
+      removeCategory(cat.id);
     }
   };
 
@@ -144,7 +151,7 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
       className={`py-20 px-6 ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, '#ffffff') }}
     >
-      {editMode && <SectionStyleEditor sectionId="gallery" style={style} />}
+      {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
       <div className="max-w-6xl mx-auto">
         <h2
           className="text-3xl font-bold text-center mb-8"
@@ -152,7 +159,7 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
         >
           <EditableText
             value={sectionTitle}
-            onChange={(val) => updateSectionTitles({ gallery: val })}
+            onChange={(val) => onContentChange({ sectionTitle: val })}
           />
         </h2>
 
@@ -183,7 +190,7 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
 
           {editMode && (
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button size="small" variant="outlined" onClick={addGalleryCategory}>
+              <Button size="small" variant="outlined" onClick={addCategory}>
                 + Category
               </Button>
               {activeTab !== 'all' && (
@@ -398,7 +405,7 @@ export default function GallerySection({ categories, sectionTitle, sectionStyle 
             variant="contained"
             color="error"
             onClick={() => {
-              if (deleteConfirm) removeGalleryCategory(deleteConfirm.id);
+              if (deleteConfirm) removeCategory(deleteConfirm.id);
               setDeleteConfirm(null);
             }}
           >

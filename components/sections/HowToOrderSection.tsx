@@ -1,20 +1,18 @@
 'use client';
 
-import { useAdmin } from '@/lib/admin-context';
 import EditableText from '@/components/admin/EditableText';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
-import type { OrderStep, SectionStyle } from '@/lib/config/types';
-import { resolveStyleColor, DEFAULT_SECTION_STYLE } from '@/lib/config/section-background';
+import type { HowToOrderContent } from '@/lib/config/types';
+import { resolveStyleColor } from '@/lib/config/section-background';
+import type { SectionRendererProps } from '@/lib/sections/registry';
 
-interface HowToOrderSectionProps {
-  headline: string;
-  steps: OrderStep[];
-  sectionStyle?: SectionStyle;
-}
-
-export default function HowToOrderSection({ headline, steps, sectionStyle }: HowToOrderSectionProps) {
-  const { editMode, updateHowToOrder } = useAdmin();
-  const style = sectionStyle ?? DEFAULT_SECTION_STYLE;
+export default function HowToOrderSection({
+  instance,
+  editMode,
+  onContentChange,
+}: SectionRendererProps<HowToOrderContent>) {
+  const { headline, steps } = instance.content;
+  const style = instance.style;
   const headingColor = resolveStyleColor(style.heading, 'var(--theme-accent)');
   const textColor = resolveStyleColor(style.text, '#4b5563');
 
@@ -24,12 +22,12 @@ export default function HowToOrderSection({ headline, steps, sectionStyle }: How
       className={`py-20 px-6 ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-secondary)') }}
     >
-      {editMode && <SectionStyleEditor sectionId="how-to-order" style={style} />}
+      {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
       <div className="max-w-4xl mx-auto">
         <h2 className="text-3xl font-bold text-center mb-12" style={{ color: headingColor }}>
           <EditableText
             value={headline}
-            onChange={(val) => updateHowToOrder({ headline: val })}
+            onChange={(val) => onContentChange({ headline: val })}
             variant="light"
           />
         </h2>
@@ -50,7 +48,7 @@ export default function HowToOrderSection({ headline, steps, sectionStyle }: How
                   <EditableText
                     value={step.title}
                     onChange={(val) =>
-                      updateHowToOrder({
+                      onContentChange({
                         steps: steps.map((s, j) => (j === i ? { ...s, title: val } : s)),
                       })
                     }
@@ -61,7 +59,7 @@ export default function HowToOrderSection({ headline, steps, sectionStyle }: How
                   <EditableText
                     value={step.description}
                     onChange={(val) =>
-                      updateHowToOrder({
+                      onContentChange({
                         steps: steps.map((s, j) =>
                           j === i ? { ...s, description: val } : s,
                         ),

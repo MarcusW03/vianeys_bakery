@@ -120,12 +120,27 @@ export default function ImagePicker({
     const cfg = workingConfig;
     if (!cfg) return [];
     const locs: string[] = [];
-    if (cfg.hero.imageUrl === url) locs.push('Hero background');
-    if (cfg.about.imageUrl === url) locs.push('About section');
-    if (cfg.featuredImageUrls.includes(url)) locs.push('Our Work');
-    cfg.gallery.categories.forEach((cat) => {
-      if (cat.images.some((img) => img.url === url)) locs.push(`Gallery: ${cat.name}`);
-    });
+    for (const instance of cfg.sections) {
+      if (instance.type === 'hero' && (instance.content as { imageUrl: string }).imageUrl === url) {
+        locs.push('Hero background');
+      }
+      if (instance.type === 'about' && (instance.content as { imageUrl: string }).imageUrl === url) {
+        locs.push('About section');
+      }
+      if (
+        instance.type === 'featured' &&
+        (instance.content as { imageUrls: string[] }).imageUrls.includes(url)
+      ) {
+        locs.push('Our Work');
+      }
+      if (instance.type === 'gallery') {
+        (instance.content as { categories: { name: string; images: { url: string }[] }[] }).categories.forEach(
+          (cat) => {
+            if (cat.images.some((img) => img.url === url)) locs.push(`Gallery: ${cat.name}`);
+          },
+        );
+      }
+    }
     return locs;
   };
 

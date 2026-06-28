@@ -28,7 +28,7 @@ import UndoIcon from '@mui/icons-material/Undo';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { useAdmin } from '@/lib/admin-context';
 import type { SiteConfig } from '@/lib/config/types';
-import { SECTION_LABELS } from '@/lib/config/section-labels';
+import { SECTION_REGISTRY } from '@/lib/sections/registry';
 import ImagePicker from './ImagePicker';
 
 
@@ -93,7 +93,6 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
     saveChanges,
     discardChanges,
     updateTheme,
-    updateSectionTitles,
     toggleSectionVisibility,
     reorderSections,
     updateSiteName,
@@ -109,19 +108,18 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
   const [dragOverSection, setDragOverSection] = useState<string | null>(null);
 
   const displayConfig = editMode && workingConfig ? workingConfig : config;
-  const order = displayConfig.sectionOrder ?? Object.keys(SECTION_LABELS);
-  const hidden = displayConfig.hiddenSections ?? [];
+  const sections = displayConfig.sections;
   const theme = displayConfig.theme;
 
   // A section is "effectively empty" for a customer when its own component
   // would render null — mirrors FeaturedGallery's/GallerySection's self-hide
   // checks so the nav link doesn't point at nothing.
-  const isEffectivelyEmpty = (sectionId: string): boolean => {
-    if (sectionId === 'featured') {
-      return displayConfig.featuredImageUrls.filter(Boolean).length === 0;
+  const isEffectivelyEmpty = (instance: SiteConfig['sections'][number]): boolean => {
+    if (instance.type === 'featured') {
+      return (instance.content as { imageUrls: string[] }).imageUrls.filter(Boolean).length === 0;
     }
-    if (sectionId === 'gallery') {
-      return displayConfig.gallery.categories.length === 0;
+    if (instance.type === 'gallery') {
+      return (instance.content as { categories: unknown[] }).categories.length === 0;
     }
     return false;
   };
@@ -129,10 +127,10 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
   // Hero is the page's own top banner — redundant as a nav link for customers.
   // Admins still see it (and hidden/empty sections, dimmed) in edit mode so
   // they can reorder/hide/fill them like any other section.
-  const navOrder =
+  const navSections =
     isAdmin && editMode
-      ? order
-      : order.filter((id) => id !== 'hero' && !hidden.includes(id) && !isEffectivelyEmpty(id));
+      ? sections
+      : sections.filter((s) => s.type !== 'hero' && !s.hidden && !isEffectivelyEmpty(s));
 
   const handleSave = async () => {
     const result = await saveChanges();
@@ -145,22 +143,18 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
     }
   };
 
-  const scrollTo = (sectionId: string) => {
+  const scrollTo = (sectionType: string) => {
     onClose?.();
     // Small delay on mobile so the drawer can close first
     setTimeout(() => {
-      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
+      document.getElementById(sectionType)?.scrollIntoView({ behavior: 'smooth' });
     }, onClose ? 200 : 0);
   };
 
   // ── Drag-to-reorder (insert, not swap) ────────────────────────────────────
-  const handleDragStart = (e: React.DragEvent, sectionId: string) => {
-    setDraggedSection(sectionId);
+  const handleDragStart = (e: React.DragEvent, instanceId: string, label: string) => {
+    setDraggedSection(instanceId);
     e.dataTransfer.effectAllowed = 'move';
-    const label =
-      (displayConfig.sectionTitles as Record<string, string>)?.[sectionId] ??
-      SECTION_LABELS[sectionId] ??
-      sectionId;
     const ghost = document.createElement('div');
     ghost.textContent = label;
     ghost.style.cssText =
@@ -183,7 +177,7 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
       setDragOverSection(null);
       return;
     }
-    const newOrder = [...order];
+    const newOrder = sections.map((s) => s.id);
     const fromIdx = newOrder.indexOf(draggedSection);
     const toIdx = newOrder.indexOf(targetId);
     // Insert at target position (not swap)
@@ -298,21 +292,21 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
           </p>
         )}
         <ul className="flex flex-col gap-0.5">
-          {navOrder.map((sectionId) => {
-            const isHidden = hidden.includes(sectionId);
-            const label = SECTION_LABELS[sectionId] ?? sectionId;
-            const title =
-              (displayConfig.sectionTitles as Record<string, string>)?.[sectionId] ?? label;
-            const isDragging = draggedSection === sectionId;
-            const isOver = dragOverSection === sectionId;
+          {navSections.map((instance) => {
+            const isHidden = !!instance.hidden;
+            const def = SECTION_REGISTRY[instance.type];
+            const label = def?.label ?? instance.type;
+            const title = (instance.content as { sectionTitle?: string })?.sectionTitle ?? label;
+            const isDragging = draggedSection === instance.id;
+            const isOver = dragOverSection === instance.id;
 
             return (
               <li
-                key={sectionId}
+                key={instance.id}
                 draggable={editMode && isAdmin}
-                onDragStart={(e) => handleDragStart(e, sectionId)}
-                onDragOver={(e) => handleDragOver(e, sectionId)}
-                onDrop={(e) => handleDrop(e, sectionId)}
+                onDragStart={(e) => handleDragStart(e, instance.id, title)}
+                onDragOver={(e) => handleDragOver(e, instance.id)}
+                onDrop={(e) => handleDrop(e, instance.id)}
                 onDragEnd={handleDragEnd}
                 style={{
                   opacity: isDragging ? 0.4 : isHidden && editMode ? 0.45 : 1,
@@ -324,7 +318,7 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
               >
                 <div className="sidebar-item-hover flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150">
                   <button
-                    onClick={() => scrollTo(sectionId)}
+                    onClick={() => scrollTo(instance.type)}
                     className="flex-1 flex items-center gap-2 text-left min-w-0 bg-transparent border-0"
                     style={{ color: 'var(--theme-accent)', cursor: editMode && isAdmin ? 'grab' : 'pointer' }}
                   >
@@ -338,7 +332,7 @@ function NavContent({ config, adminName, onClose }: NavContentProps) {
                   {editMode && isAdmin && (
                     <IconButton
                       size="small"
-                      onClick={() => toggleSectionVisibility(sectionId)}
+                      onClick={() => toggleSectionVisibility(instance.id)}
                       sx={{
                         p: 0.25,
                         color: isHidden ? 'var(--theme-primary)' : 'inherit',

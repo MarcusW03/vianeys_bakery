@@ -21,10 +21,10 @@ function isCustomValue(value: string): boolean {
  * section's background/heading/text colors without scrolling through a
  * sidebar list. Anchors to the section's own relative-positioned root. */
 export default function SectionStyleEditor({
-  sectionId,
+  instanceId,
   style,
 }: {
-  sectionId: string;
+  instanceId: string;
   style: SectionStyle;
 }) {
   const { updateSectionStyle } = useAdmin();
@@ -79,7 +79,7 @@ export default function SectionStyleEditor({
                     <button
                       key={slot}
                       title={slotLabel}
-                      onClick={() => updateSectionStyle(sectionId, { [key]: slot })}
+                      onClick={() => updateSectionStyle(instanceId, { [key]: slot })}
                       className="w-5 h-5 rounded-full flex-shrink-0"
                       style={{
                         background:
@@ -98,7 +98,7 @@ export default function SectionStyleEditor({
                   <input
                     type="color"
                     value={isCustomValue(current) ? current : '#ffffff'}
-                    onChange={(e) => updateSectionStyle(sectionId, { [key]: e.target.value })}
+                    onChange={(e) => updateSectionStyle(instanceId, { [key]: e.target.value })}
                     title="Custom color"
                     className="w-5 h-5 rounded-full cursor-pointer border-0 p-0 flex-shrink-0"
                     style={{

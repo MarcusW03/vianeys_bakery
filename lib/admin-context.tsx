@@ -2,18 +2,8 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { signOut } from 'next-auth/react';
-import type {
-  SiteConfig,
-  HeroContent,
-  AboutContent,
-  ContactContent,
-  GalleryCategory,
-  PricingItem,
-  SiteTheme,
-  SectionStyle,
-} from '@/lib/config/types';
+import type { SiteConfig, SiteTheme, SectionStyle } from '@/lib/config/types';
 import { removeImageUrlFromConfig } from '@/lib/config/utils';
-import { DEFAULT_SECTION_STYLE } from '@/lib/config/section-background';
 
 interface AdminContextValue {
   isAdmin: boolean;
@@ -31,23 +21,12 @@ interface AdminContextValue {
   enterEditMode: () => Promise<void>;
   exitEditMode: () => void;
   updateSiteName: (name: string) => void;
-  updateHero: (patch: Partial<HeroContent>) => void;
-  updateFeaturedImages: (urls: string[]) => void;
-  updateGalleryCategory: (categoryId: string, patch: Partial<GalleryCategory>) => void;
-  updatePricing: (patch: Partial<SiteConfig['pricing']>) => void;
-  updateHowToOrder: (patch: Partial<SiteConfig['howToOrder']>) => void;
-  updateAbout: (patch: Partial<AboutContent>) => void;
-  updateContact: (patch: Partial<ContactContent>) => void;
-  updateSectionTitles: (patch: Partial<SiteConfig['sectionTitles']>) => void;
   updateTheme: (patch: Partial<SiteTheme>) => void;
-  updateSectionStyle: (sectionId: string, patch: Partial<SectionStyle>) => void;
+  updateSectionContent: (instanceId: string, patch: Record<string, unknown>) => void;
+  updateSectionStyle: (instanceId: string, patch: Partial<SectionStyle>) => void;
+  toggleSectionVisibility: (instanceId: string) => void;
+  reorderSections: (newIdOrder: string[]) => void;
   removeImageUrl: (url: string) => void;
-  addPricingItem: () => void;
-  removePricingItem: (id: string) => void;
-  addGalleryCategory: () => void;
-  removeGalleryCategory: (id: string) => void;
-  reorderSections: (order: string[]) => void;
-  toggleSectionVisibility: (sectionId: string) => void;
   saveChanges: () => Promise<{ ok: boolean; error?: string }>;
   discardChanges: () => void;
 }
@@ -102,74 +81,39 @@ export function AdminProvider({
     setWorkingConfig((prev) => (prev ? { ...prev, siteName: name } : prev));
   }, []);
 
-  const updateHero = useCallback((patch: Partial<HeroContent>) => {
-    setWorkingConfig((prev) => (prev ? { ...prev, hero: { ...prev.hero, ...patch } } : prev));
-  }, []);
-
-  const updateFeaturedImages = useCallback((urls: string[]) => {
-    setWorkingConfig((prev) => (prev ? { ...prev, featuredImageUrls: urls } : prev));
-  }, []);
-
-  const updateGalleryCategory = useCallback(
-    (categoryId: string, patch: Partial<GalleryCategory>) => {
-      setWorkingConfig((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          gallery: {
-            categories: prev.gallery.categories.map((c) =>
-              c.id === categoryId ? { ...c, ...patch } : c,
-            ),
-          },
-        };
-      });
-    },
-    [],
-  );
-
-  const updatePricing = useCallback((patch: Partial<SiteConfig['pricing']>) => {
-    setWorkingConfig((prev) =>
-      prev ? { ...prev, pricing: { ...prev.pricing, ...patch } } : prev,
-    );
-  }, []);
-
-  const updateHowToOrder = useCallback((patch: Partial<SiteConfig['howToOrder']>) => {
-    setWorkingConfig((prev) =>
-      prev ? { ...prev, howToOrder: { ...prev.howToOrder, ...patch } } : prev,
-    );
-  }, []);
-
-  const updateAbout = useCallback((patch: Partial<AboutContent>) => {
-    setWorkingConfig((prev) =>
-      prev ? { ...prev, about: { ...prev.about, ...patch } } : prev,
-    );
-  }, []);
-
-  const updateContact = useCallback((patch: Partial<ContactContent>) => {
-    setWorkingConfig((prev) =>
-      prev ? { ...prev, contact: { ...prev.contact, ...patch } } : prev,
-    );
-  }, []);
-
-  const updateSectionTitles = useCallback((patch: Partial<SiteConfig['sectionTitles']>) => {
-    setWorkingConfig((prev) =>
-      prev ? { ...prev, sectionTitles: { ...prev.sectionTitles, ...patch } } : prev,
-    );
-  }, []);
-
   const updateTheme = useCallback((patch: Partial<SiteTheme>) => {
     setWorkingConfig((prev) =>
       prev ? { ...prev, theme: { ...prev.theme, ...patch } } : prev,
     );
   }, []);
 
-  const updateSectionStyle = useCallback((sectionId: string, patch: Partial<SectionStyle>) => {
+  const updateSectionContent = useCallback(
+    (instanceId: string, patch: Record<string, unknown>) => {
+      setWorkingConfig((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          sections: prev.sections.map((instance) =>
+            instance.id === instanceId
+              ? { ...instance, content: { ...(instance.content as object), ...patch } }
+              : instance,
+          ),
+        };
+      });
+    },
+    [],
+  );
+
+  const updateSectionStyle = useCallback((instanceId: string, patch: Partial<SectionStyle>) => {
     setWorkingConfig((prev) => {
       if (!prev) return prev;
-      const current = prev.sectionStyles?.[sectionId] ?? DEFAULT_SECTION_STYLE;
       return {
         ...prev,
-        sectionStyles: { ...prev.sectionStyles, [sectionId]: { ...current, ...patch } },
+        sections: prev.sections.map((instance) =>
+          instance.id === instanceId
+            ? { ...instance, style: { ...instance.style, ...patch } }
+            : instance,
+        ),
       };
     });
   }, []);
@@ -178,63 +122,23 @@ export function AdminProvider({
     setWorkingConfig((prev) => (prev ? removeImageUrlFromConfig(prev, url) : prev));
   }, []);
 
-  const addPricingItem = useCallback(() => {
+  const reorderSections = useCallback((newIdOrder: string[]) => {
     setWorkingConfig((prev) => {
       if (!prev) return prev;
-      const newItem: PricingItem = {
-        id: `item-${Date.now()}`,
-        name: 'New Item',
-        description: 'Add a description',
-        priceRange: 'Price TBD',
-      };
-      return { ...prev, pricing: { ...prev.pricing, items: [...prev.pricing.items, newItem] } };
+      const byId = new Map(prev.sections.map((s) => [s.id, s]));
+      return { ...prev, sections: newIdOrder.map((id) => byId.get(id)!).filter(Boolean) };
     });
   }, []);
 
-  const removePricingItem = useCallback((id: string) => {
+  const toggleSectionVisibility = useCallback((instanceId: string) => {
     setWorkingConfig((prev) => {
       if (!prev) return prev;
       return {
         ...prev,
-        pricing: { ...prev.pricing, items: prev.pricing.items.filter((it) => it.id !== id) },
+        sections: prev.sections.map((instance) =>
+          instance.id === instanceId ? { ...instance, hidden: !instance.hidden } : instance,
+        ),
       };
-    });
-  }, []);
-
-  const addGalleryCategory = useCallback(() => {
-    setWorkingConfig((prev) => {
-      if (!prev) return prev;
-      const newCat: GalleryCategory = {
-        id: `cat-${Date.now()}`,
-        name: 'New Category',
-        images: [],
-      };
-      return { ...prev, gallery: { categories: [...prev.gallery.categories, newCat] } };
-    });
-  }, []);
-
-  const removeGalleryCategory = useCallback((id: string) => {
-    setWorkingConfig((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        gallery: { categories: prev.gallery.categories.filter((c) => c.id !== id) },
-      };
-    });
-  }, []);
-
-  const reorderSections = useCallback((order: string[]) => {
-    setWorkingConfig((prev) => (prev ? { ...prev, sectionOrder: order } : prev));
-  }, []);
-
-  const toggleSectionVisibility = useCallback((sectionId: string) => {
-    setWorkingConfig((prev) => {
-      if (!prev) return prev;
-      const current = prev.hiddenSections ?? [];
-      const next = current.includes(sectionId)
-        ? current.filter((id) => id !== sectionId)
-        : [...current, sectionId];
-      return { ...prev, hiddenSections: next };
     });
   }, []);
 
@@ -283,21 +187,10 @@ export function AdminProvider({
         enterEditMode,
         exitEditMode,
         updateSiteName,
-        updateHero,
-        updateFeaturedImages,
-        updateGalleryCategory,
-        updatePricing,
-        updateHowToOrder,
-        updateAbout,
-        updateContact,
-        updateSectionTitles,
         updateTheme,
+        updateSectionContent,
         updateSectionStyle,
         removeImageUrl,
-        addPricingItem,
-        removePricingItem,
-        addGalleryCategory,
-        removeGalleryCategory,
         reorderSections,
         toggleSectionVisibility,
         saveChanges,

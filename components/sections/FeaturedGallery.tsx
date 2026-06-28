@@ -1,22 +1,20 @@
 'use client';
 
 import Image from 'next/image';
-import { useAdmin } from '@/lib/admin-context';
 import EditableText from '@/components/admin/EditableText';
 import EditableImage from '@/components/admin/EditableImage';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
-import { resolveStyleColor, DEFAULT_SECTION_STYLE } from '@/lib/config/section-background';
-import type { SectionStyle } from '@/lib/config/types';
+import { resolveStyleColor } from '@/lib/config/section-background';
+import type { FeaturedContent } from '@/lib/config/types';
+import type { SectionRendererProps } from '@/lib/sections/registry';
 
-interface FeaturedGalleryProps {
-  imageUrls: string[];
-  sectionTitle: string;
-  sectionStyle?: SectionStyle;
-}
-
-export default function FeaturedGallery({ imageUrls, sectionTitle, sectionStyle }: FeaturedGalleryProps) {
-  const { editMode, updateFeaturedImages, updateSectionTitles } = useAdmin();
-  const style = sectionStyle ?? DEFAULT_SECTION_STYLE;
+export default function FeaturedGallery({
+  instance,
+  editMode,
+  onContentChange,
+}: SectionRendererProps<FeaturedContent>) {
+  const { imageUrls, sectionTitle } = instance.content;
+  const style = instance.style;
   const headingColor = resolveStyleColor(style.heading, 'var(--theme-accent)');
 
   const nonEmpty = imageUrls.filter((u) => u);
@@ -24,13 +22,13 @@ export default function FeaturedGallery({ imageUrls, sectionTitle, sectionStyle 
   const handleChange = (index: number, url: string) => {
     const updated = [...imageUrls];
     updated[index] = url;
-    updateFeaturedImages(updated);
+    onContentChange({ imageUrls: updated });
   };
 
-  const handleAdd = () => updateFeaturedImages([...imageUrls, '']);
+  const handleAdd = () => onContentChange({ imageUrls: [...imageUrls, ''] });
 
   const handleRemove = (index: number) =>
-    updateFeaturedImages(imageUrls.filter((_, i) => i !== index));
+    onContentChange({ imageUrls: imageUrls.filter((_, i) => i !== index) });
 
   if (!editMode && nonEmpty.length === 0) return null;
 
@@ -40,7 +38,7 @@ export default function FeaturedGallery({ imageUrls, sectionTitle, sectionStyle 
       className={`py-20 px-6 ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-secondary)') }}
     >
-      {editMode && <SectionStyleEditor sectionId="featured" style={style} />}
+      {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
       <div className="max-w-6xl mx-auto">
         <h2
           className="text-3xl font-bold text-center mb-10"
@@ -48,7 +46,7 @@ export default function FeaturedGallery({ imageUrls, sectionTitle, sectionStyle 
         >
           <EditableText
             value={sectionTitle}
-            onChange={(val) => updateSectionTitles({ featured: val })}
+            onChange={(val) => onContentChange({ sectionTitle: val })}
           />
         </h2>
 

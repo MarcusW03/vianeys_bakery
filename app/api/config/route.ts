@@ -26,7 +26,7 @@ export async function PUT(request: Request): Promise<Response> {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  if (!body?.hero?.headline || !body?.siteName) {
+  if (!body?.siteName || !Array.isArray(body?.sections)) {
     return Response.json({ error: 'Invalid config structure' }, { status: 400 });
   }
 

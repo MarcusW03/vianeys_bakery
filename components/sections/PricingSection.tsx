@@ -1,22 +1,34 @@
 'use client';
 
-import { useAdmin } from '@/lib/admin-context';
 import EditableText from '@/components/admin/EditableText';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
-import type { PricingItem, SectionStyle } from '@/lib/config/types';
-import { resolveStyleColor, DEFAULT_SECTION_STYLE } from '@/lib/config/section-background';
+import type { PricingItem, PricingContent } from '@/lib/config/types';
+import { resolveStyleColor } from '@/lib/config/section-background';
+import type { SectionRendererProps } from '@/lib/sections/registry';
 
-interface PricingSectionProps {
-  headline: string;
-  items: PricingItem[];
-  sectionStyle?: SectionStyle;
-}
-
-export default function PricingSection({ headline, items, sectionStyle }: PricingSectionProps) {
-  const { editMode, updatePricing, addPricingItem, removePricingItem } = useAdmin();
-  const style = sectionStyle ?? DEFAULT_SECTION_STYLE;
+export default function PricingSection({
+  instance,
+  editMode,
+  onContentChange,
+}: SectionRendererProps<PricingContent>) {
+  const { headline, items } = instance.content;
+  const style = instance.style;
   const headingColor = resolveStyleColor(style.heading, 'var(--theme-accent)');
   const textColor = resolveStyleColor(style.text, '#4b5563');
+
+  const addItem = () => {
+    const newItem: PricingItem = {
+      id: `item-${Date.now()}`,
+      name: 'New Item',
+      description: 'Add a description',
+      priceRange: 'Price TBD',
+    };
+    onContentChange({ items: [...items, newItem] });
+  };
+
+  const removeItem = (id: string) => {
+    onContentChange({ items: items.filter((it) => it.id !== id) });
+  };
 
   return (
     <section
@@ -24,12 +36,12 @@ export default function PricingSection({ headline, items, sectionStyle }: Pricin
       className={`py-20 px-6 ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, 'var(--theme-secondary)') }}
     >
-      {editMode && <SectionStyleEditor sectionId="pricing" style={style} />}
+      {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
       <div className="max-w-5xl mx-auto">
         <h2 className="text-3xl font-bold text-center mb-12" style={{ color: headingColor }}>
           <EditableText
             value={headline}
-            onChange={(val) => updatePricing({ headline: val })}
+            onChange={(val) => onContentChange({ headline: val })}
             variant="light"
           />
         </h2>
@@ -43,7 +55,7 @@ export default function PricingSection({ headline, items, sectionStyle }: Pricin
             >
               {editMode && (
                 <button
-                  onClick={() => removePricingItem(item.id)}
+                  onClick={() => removeItem(item.id)}
                   className="absolute top-3 right-3 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
                 >
                   ×
@@ -54,7 +66,7 @@ export default function PricingSection({ headline, items, sectionStyle }: Pricin
                 <EditableText
                   value={item.name}
                   onChange={(val) =>
-                    updatePricing({
+                    onContentChange({
                       items: items.map((it, j) => (j === i ? { ...it, name: val } : it)),
                     })
                   }
@@ -66,7 +78,7 @@ export default function PricingSection({ headline, items, sectionStyle }: Pricin
                 <EditableText
                   value={item.description}
                   onChange={(val) =>
-                    updatePricing({
+                    onContentChange({
                       items: items.map((it, j) =>
                         j === i ? { ...it, description: val } : it,
                       ),
@@ -87,7 +99,7 @@ export default function PricingSection({ headline, items, sectionStyle }: Pricin
                 <EditableText
                   value={item.priceRange}
                   onChange={(val) =>
-                    updatePricing({
+                    onContentChange({
                       items: items.map((it, j) =>
                         j === i ? { ...it, priceRange: val } : it,
                       ),
@@ -101,7 +113,7 @@ export default function PricingSection({ headline, items, sectionStyle }: Pricin
 
           {editMode && (
             <button
-              onClick={addPricingItem}
+              onClick={addItem}
               className="bg-white rounded-[var(--radius-lg)] p-6 border-2 border-dashed flex items-center justify-center text-3xl hover:opacity-70 transition-opacity min-h-[160px]"
               style={{
                 borderColor: 'var(--theme-primary)',

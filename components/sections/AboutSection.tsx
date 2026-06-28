@@ -1,22 +1,20 @@
 'use client';
 
 import Image from 'next/image';
-import { useAdmin } from '@/lib/admin-context';
 import EditableText from '@/components/admin/EditableText';
 import EditableImage from '@/components/admin/EditableImage';
 import SectionStyleEditor from '@/components/admin/SectionStyleEditor';
-import type { AboutContent, SectionStyle } from '@/lib/config/types';
-import { resolveStyleColor, DEFAULT_SECTION_STYLE } from '@/lib/config/section-background';
+import type { AboutContent } from '@/lib/config/types';
+import { resolveStyleColor } from '@/lib/config/section-background';
+import type { SectionRendererProps } from '@/lib/sections/registry';
 
 export default function AboutSection({
-  data,
-  sectionStyle,
-}: {
-  data: AboutContent;
-  sectionStyle?: SectionStyle;
-}) {
-  const { editMode, updateAbout } = useAdmin();
-  const style = sectionStyle ?? DEFAULT_SECTION_STYLE;
+  instance,
+  editMode,
+  onContentChange,
+}: SectionRendererProps<AboutContent>) {
+  const data = instance.content;
+  const style = instance.style;
   const headingColor = resolveStyleColor(style.heading, 'var(--theme-accent)');
   const textColor = resolveStyleColor(style.text, '#4b5563');
 
@@ -26,7 +24,7 @@ export default function AboutSection({
       className={`py-20 px-6 ${editMode ? 'edit-mode-section-outline' : ''}`}
       style={{ backgroundColor: resolveStyleColor(style.background, '#ffffff') }}
     >
-      {editMode && <SectionStyleEditor sectionId="about" style={style} />}
+      {editMode && <SectionStyleEditor instanceId={instance.id} style={style} />}
       <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
         {/* Image */}
         <div
@@ -37,7 +35,7 @@ export default function AboutSection({
             <EditableImage
               src={data.imageUrl}
               alt="About the baker"
-              onImageChange={(url) => updateAbout({ imageUrl: url })}
+              onImageChange={(url) => onContentChange({ imageUrl: url })}
               width={500}
               height={500}
               className="w-full h-full object-cover"
@@ -62,14 +60,14 @@ export default function AboutSection({
           <h2 className="text-3xl font-bold mb-4" style={{ color: headingColor }}>
             <EditableText
               value={data.headline}
-              onChange={(val) => updateAbout({ headline: val })}
+              onChange={(val) => onContentChange({ headline: val })}
               variant="light"
             />
           </h2>
           <p className="leading-relaxed text-lg" style={{ color: textColor }}>
             <EditableText
               value={data.body}
-              onChange={(val) => updateAbout({ body: val })}
+              onChange={(val) => onContentChange({ body: val })}
               multiline
               variant="light"
             />
